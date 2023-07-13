@@ -1,0 +1,19 @@
+FROM python:3.10-slim
+
+# Set the working directory inside the container
+WORKDIR /app
+
+COPY requirements.txt .
+RUN python -m pip install --upgrade pip
+RUN python -m pip install -r requirements.txt
+
+COPY ./goodreads_visualizer .
+
+RUN mkdir /app/files
+COPY ./files/goodreads_export.csv /app/files/goodreads_export.csv
+
+EXPOSE 8501
+CMD ["streamlit", "run", "main.py"]
+
+# Mount a volume to sync the local directory with the container directory
+VOLUME ["/app"]

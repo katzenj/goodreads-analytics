@@ -1,4 +1,3 @@
-from time import sleep
 from typing import Dict, Optional, Union
 import pandas as pd
 import re
@@ -10,7 +9,11 @@ from datetime import datetime
 import calendar
 import altair as alt
 
-from goodreads_visualizer import page_parser, url_utils
+try:
+    from goodreads_visualizer import page_parser, url_utils
+except ModuleNotFoundError:
+    import page_parser
+    import url_utils
 
 
 def convert_string_to_datetime(string: Optional[str]) -> Optional[datetime]:
@@ -60,7 +63,7 @@ def parse_url(url: str) -> str:
     return f"https://www.goodreads.com/review/list/{user_id}"
 
 
-@st.cache_data(show_spinner="Loading your books...")
+@st.cache_data(show_spinner=False)
 def get_all_book_data(base_url: str) -> pd.DataFrame:
     request_url = url_utils.format_goodreads_url(base_url)
     response = requests.get(request_url)
@@ -68,13 +71,18 @@ def get_all_book_data(base_url: str) -> pd.DataFrame:
     parser = page_parser.PageParser(response.text)
     last_page_number = parser.last_page_number()
 
+    progress_bar = st.progress(1 / last_page_number, text="Loading your books...")
+
     all_data = []
     all_data.extend(parser.parse_page())
 
     # Start at 2, already parsed page 1
     for page_number in range(2, last_page_number + 1):
-        # Sleep for 2 sec to avoid rate limiting.
-        sleep(2)
+        progress_bar.progress(
+            page_number / last_page_number,
+            text="Loading your books...",
+        )
+
         request_url = format_goodreads_url(base_url, {"page": page_number})
         print(f"Page number: {page_number}")
         print(f"URL: {request_url}")
@@ -82,6 +90,8 @@ def get_all_book_data(base_url: str) -> pd.DataFrame:
         print(f"Status Code: {response.status_code}")
         parser = page_parser.PageParser(response.text)
         all_data.extend(parser.parse_page())
+
+    progress_bar.empty()
 
     return pd.DataFrame(all_data)
 
@@ -184,7 +194,6 @@ def show_data(df: pd.DataFrame) -> None:
 
     # --- Current year's data ---
     current_year = pd.to_datetime("today").year
-    df.dtypes
     df_read_current_year = df[df["date_read"].dt.year == current_year]
     books_per_month_current_year = books_read_by_month(df_read_current_year)
 
