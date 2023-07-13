@@ -1,4 +1,5 @@
 from typing import Dict, Optional, Union
+import os
 import pandas as pd
 import re
 import requests
@@ -302,6 +303,6 @@ if __name__ == "__main__":
     if goodreads_url:
         df = get_all_book_data(goodreads_url)
         show_data(df)
-    else:
+    elif os.getenv("PYTHON_ENV") == "development" and st.button("Load Sample Data"):
         df = pd.read_csv("files/goodreads_export.csv")
         show_data(df)

@@ -7,13 +7,9 @@ COPY requirements.txt .
 RUN python -m pip install --upgrade pip
 RUN python -m pip install -r requirements.txt
 
-COPY ./goodreads_visualizer .
+COPY . .
 
-RUN mkdir /app/files
-COPY ./files/goodreads_export.csv /app/files/goodreads_export.csv
+ENV PYTHON_ENV=development
 
 EXPOSE 8501
-CMD ["streamlit", "run", "main.py"]
-
-# Mount a volume to sync the local directory with the container directory
-VOLUME ["/app"]
+CMD ["streamlit", "run", "goodreads_visualizer/main.py"]
