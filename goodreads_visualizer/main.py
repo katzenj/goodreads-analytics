@@ -198,12 +198,12 @@ def show_data(df: pd.DataFrame) -> None:
     df_read_current_year = df[df["date_read"].dt.year == current_year]
     books_per_month_current_year = books_read_by_month(df_read_current_year)
 
-    row1_col1, _, row1_col2 = st.columns([0.4, 0.2, 0.4])
+    row1_col1, _, row1_col2 = st.columns([0.4, 0.1, 0.4])
     with row1_col1:
         st.write("### Books Read This Year")
         chart = (
             alt.Chart(books_per_month_current_year)
-            .mark_bar(color="#47AFAE")
+            .mark_bar(color="#068D9D")
             .encode(
                 x=alt.X("Month", sort=list(books_per_month_current_year["Month"])),
                 y="Number of Books",
@@ -220,9 +220,8 @@ def show_data(df: pd.DataFrame) -> None:
             dates_and_counts.append([month, current_year, 0])
 
         base_df = pd.DataFrame(dates_and_counts, columns=["month", "year", "count"])
-        books_last_two_years_df = df[
-            df["date_read"].dt.year.isin([current_year - 1, current_year])
-        ]
+        years = [current_year - 1, current_year]
+        books_last_two_years_df = df[df["date_read"].dt.year.isin(years)]
         books_read_last_two_years_counts = books_read_by_month_and_year(
             books_last_two_years_df
         )
@@ -246,17 +245,16 @@ def show_data(df: pd.DataFrame) -> None:
                 tooltip=["month", "count"],
             )
         )
-
         st.altair_chart(chart)
 
-    row2_col1, _, row2_col2 = st.columns([0.4, 0.2, 0.4])
+    row2_col1, _, row2_col2 = st.columns([0.4, 0.1, 0.4])
     with row2_col1:
         st.write("### Book Length Distribution")
 
         df_page_dist = df["num_pages"].reset_index()
         bar = (
             alt.Chart(df_page_dist)
-            .mark_bar()
+            .mark_bar(color="#53599A")
             .encode(
                 x=alt.X(
                     "num_pages",
@@ -266,7 +264,7 @@ def show_data(df: pd.DataFrame) -> None:
                 y=alt.Y(aggregate="count", title="Number of Books"),
             )
         )
-        st.altair_chart(bar, use_container_width=True)
+        st.altair_chart(bar)
 
     with row2_col2:
         st.write("### Rating Distribution")
@@ -276,7 +274,7 @@ def show_data(df: pd.DataFrame) -> None:
         )
         bar = (
             alt.Chart(df_rating)
-            .mark_bar(width=50)
+            .mark_bar(width=50, color="#6D9DC5")
             .encode(
                 x=alt.X(
                     "rating",
@@ -287,7 +285,26 @@ def show_data(df: pd.DataFrame) -> None:
                 y=alt.Y("count", title="Number of Books"),
             )
         )
-        st.altair_chart(bar, use_container_width=True)
+        st.altair_chart(bar)
+
+    row3_col1, _, row3_col2 = st.columns([0.4, 0.1, 0.4])
+    with row3_col1:
+        st.write("### Book Publish Year Distribution")
+        df_pub_dist = df[pd.notna(df["date_pub"])]["date_pub"].reset_index()
+        # df_pub_dist["date_pub"] = df_pub_dist["date_pub"].dt.year
+        bar = (
+            alt.Chart(df_pub_dist)
+            .mark_bar(color="#80DED9", width=5)
+            .encode(
+                x=alt.X(
+                    "date_pub",
+                    title="Year Published",
+                    timeUnit="year",
+                ),
+                y=alt.Y(aggregate="count", title="Number of Books"),
+            )
+        )
+        st.altair_chart(bar)
 
 
 if __name__ == "__main__":
