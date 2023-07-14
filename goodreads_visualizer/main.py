@@ -1,10 +1,9 @@
-from typing import Dict, Optional, Union
+from typing import Optional, Union
 import os
 import pandas as pd
 import re
 import requests
 import streamlit as st
-from urllib.parse import parse_qs, urlencode, urlparse, urlunparse
 
 from datetime import datetime
 import calendar
@@ -39,31 +38,6 @@ def convert_string_to_datetime(string: Optional[str]) -> Optional[datetime]:
         return datetime.strptime(matched_str, "%b %Y").date()
 
 
-def format_goodreads_url(url: str, params: Dict[str, Union[str, int]] = {}) -> str:
-    parsed_url = urlparse(url)
-    query_params = parse_qs(parsed_url.query)
-    query_params.update(params)
-
-    if "print" not in query_params:
-        query_params["print"] = ["true"]
-
-    encoded_params = encoded_params = urlencode(query_params, doseq=True)
-    modified_parts = list(parsed_url)
-    modified_parts[4] = encoded_params
-    return urlunparse(modified_parts)
-
-
-def parse_url(url: str) -> str:
-    parsed_url = urlparse(url)
-    if parsed_url.startswith("/user/show"):
-        user_id = parsed_url.path.split("/")[3]
-    elif parsed_url.startswith("/review/list"):
-        user_id = parsed_url.path.split("/")[3]
-    else:
-        raise ValueError("Invalid URL")
-    return f"https://www.goodreads.com/review/list/{user_id}"
-
-
 @st.cache_data(show_spinner=False)
 def get_all_book_data(base_url: str) -> pd.DataFrame:
     request_url = url_utils.format_goodreads_url(base_url)
@@ -84,7 +58,7 @@ def get_all_book_data(base_url: str) -> pd.DataFrame:
             text="Loading your books...",
         )
 
-        request_url = format_goodreads_url(base_url, {"page": page_number})
+        request_url = url_utils.format_goodreads_url(base_url, {"page": page_number})
         print(f"Page number: {page_number}")
         print(f"URL: {request_url}")
         response = requests.get(request_url)
@@ -193,7 +167,34 @@ def show_data(df: pd.DataFrame) -> None:
         key="download-json",
     )
 
+    current_year = pd.to_datetime("today").year
+
+    # --- Year in Review ---
+    st.write("<hr/>", unsafe_allow_html=True)
+    st.write("### Year in Review")
+    dates = list(set(df[pd.notna(df["date_read"])]["date_read"].dt.strftime("%Y")))
+    dates.sort(reverse=True)
+
+    year = st.selectbox("Year", dates, index=0)
+    df_read_year = df[df["date_read"].dt.year == int(year)]
+    st.metric("Books read", df_read_year.shape[0])
+    st.metric("Average book rating", round(df_read_year["rating"].mean(), 2))
+    st.metric("Average book length", f'{int(df_read_year["num_pages"].mean())} pages')
+    highest_rated_books = df_read_year[
+        df_read_year["rating"] == df_read_year["rating"].max()
+    ]
+    title = (
+        "Highest rated books"
+        if len(highest_rated_books["title"]) > 1
+        else "Highest rated book"
+    )
+    st.metric("Highest rating", highest_rated_books["rating"].max())
+    st.write(title)
+    for rated_title in highest_rated_books["title"]:
+        st.write(f"- {rated_title}")
+
     # --- Current year's data ---
+    st.write("<hr/>", unsafe_allow_html=True)
     current_year = pd.to_datetime("today").year
     df_read_current_year = df[df["date_read"].dt.year == current_year]
     books_per_month_current_year = books_read_by_month(df_read_current_year)
@@ -247,6 +248,7 @@ def show_data(df: pd.DataFrame) -> None:
         )
         st.altair_chart(chart)
 
+    st.write("<hr/>", unsafe_allow_html=True)
     row2_col1, _, row2_col2 = st.columns([0.4, 0.1, 0.4])
     with row2_col1:
         st.write("### Book Length Distribution")
@@ -287,6 +289,7 @@ def show_data(df: pd.DataFrame) -> None:
         )
         st.altair_chart(bar)
 
+    st.write("<hr/>", unsafe_allow_html=True)
     row3_col1, _, row3_col2 = st.columns([0.4, 0.1, 0.4])
     with row3_col1:
         st.write("### Book Publish Year Distribution")
@@ -307,19 +310,18 @@ def show_data(df: pd.DataFrame) -> None:
         st.altair_chart(bar)
 
 
-if __name__ == "__main__":
-    st.set_page_config(page_title="Goodreads Analysis", layout="wide")
+st.set_page_config(page_title="Goodreads Visualizer", layout="wide")
 
-    st.write("# Goodreads Visualizer")
-    goodreads_url = st.text_input(
-        "Enter your Goodreads URL",
-        key="goodreads-url",
-        placeholder="https://www.goodreads.com/review/list/142394620-jordan?print=true",
-    )
+st.write("# Goodreads Visualizer")
+goodreads_url = st.text_input(
+    "Enter your Goodreads URL",
+    key="goodreads-url",
+    placeholder="https://www.goodreads.com/review/list/142394620?print=true",
+)
 
-    if goodreads_url:
-        df = get_all_book_data(goodreads_url)
-        show_data(df)
-    elif os.getenv("PYTHON_ENV") == "development" and st.button("Load Sample Data"):
-        df = pd.read_csv("files/goodreads_export.csv")
-        show_data(df)
+if goodreads_url:
+    df = get_all_book_data(goodreads_url)
+    show_data(df)
+elif os.getenv("PYTHON_ENV") == "development" and st.button("Load Sample Data"):
+    df = pd.read_csv("files/goodreads_export.csv")
+    show_data(df)
