@@ -1,46 +1,30 @@
-from typing import Optional, Union
+import datetime
 import os
 import pandas as pd
-import re
 import requests
 import streamlit as st
 
-from datetime import datetime
-import calendar
 import altair as alt
 
+
 try:
-    from goodreads_visualizer import page_parser, url_utils
+    from goodreads_visualizer import page_parser, url_utils, df_utils
+    from goodreads_visualizer.sections import BooksReadThisYear, BooksReadComparedToYear
 except ModuleNotFoundError:
+    from sections import BooksReadThisYear, BooksReadComparedToYear
+    import df_utils
     import page_parser
     import url_utils
 
 
-def convert_string_to_datetime(string: Optional[str]) -> Optional[datetime]:
-    if string is None or pd.isna(string):
-        return None
-
-    date_fmt_one = re.match(r"\d{4}-\d{2}-\d{2}", string)
-    if date_fmt_one:
-        return datetime.strptime(date_fmt_one.group(), "%Y-%m-%d").date()
-
-    date_fmt_two = re.match(r"\w{3}\s+(\d{1,2},)?\s{0,}\d{4}", string)
-    if not date_fmt_two:
-        return None
-
-    if isinstance(string, datetime):
-        return string
-
-    matched_str = date_fmt_two.group()
-    try:
-        return datetime.strptime(matched_str, "%b %d, %Y").date()
-    except ValueError:
-        return datetime.strptime(matched_str, "%b %Y").date()
-
-
 @st.cache_data(show_spinner=False)
+def get_all_book_data_cached(base_url: str) -> pd.DataFrame:
+    return get_all_book_data(base_url)
+
+
 def get_all_book_data(base_url: str) -> pd.DataFrame:
     request_url = url_utils.format_goodreads_url(base_url)
+    user_id = url_utils.parse_user_id(base_url)
     response = requests.get(request_url)
 
     parser = page_parser.PageParser(response.text)
@@ -59,109 +43,49 @@ def get_all_book_data(base_url: str) -> pd.DataFrame:
         )
 
         request_url = url_utils.format_goodreads_url(base_url, {"page": page_number})
-        print(f"Page number: {page_number}")
-        print(f"URL: {request_url}")
         response = requests.get(request_url)
-        print(f"Status Code: {response.status_code}")
         parser = page_parser.PageParser(response.text)
         all_data.extend(parser.parse_page())
 
     progress_bar.empty()
 
-    return pd.DataFrame(all_data)
+    df = pd.DataFrame(all_data)
+    df["user_id"] = user_id
+    df["synced_at"] = datetime.datetime.now()
+    return df
 
 
-def format_df(df: pd.DataFrame) -> None:
-    df["date_read"] = pd.to_datetime(df["date_read"].apply(convert_string_to_datetime))
-    df["date_started"] = pd.to_datetime(
-        df["date_started"].apply(convert_string_to_datetime)
-    )
-    df["date_pub"] = pd.to_datetime(df["date_pub"].apply(convert_string_to_datetime))
-    df["date_added"] = pd.to_datetime(
-        df["date_added"].apply(convert_string_to_datetime)
-    )
-    df["rating"] = df["rating"].apply(convert_rating_to_number)
-
-
-def get_books_read_this_year(df: pd.DataFrame) -> pd.DataFrame:
-    current_year = pd.to_datetime("today").year
-    df_current_year = df[df["date_read"].dt.year == current_year]
-    return df_current_year
-
-
-def convert_rating_to_number(rating: Optional[Union[str, int, float]]) -> Optional[int]:
-    if isinstance(rating, (int, float)):
-        return rating
-
-    if rating == "did not like it":
-        return 1
-    elif rating == "it was ok":
-        return 2
-    elif rating == "liked it":
-        return 3
-    elif rating == "really liked it":
-        return 4
-    elif rating == "it was amazing":
-        return 5
-    else:
-        return None
-
-
-@st.cache_data
-def books_read_by_month(df: pd.DataFrame) -> pd.DataFrame:
-    # Group by month and count the number of books
-    books_per_month_current_year = (
-        df.groupby(df["date_read"].dt.month).size().reset_index()
-    )
-    books_per_month_current_year = (
-        books_per_month_current_year.set_index("date_read")
-        .reindex(range(1, 13), fill_value=0)
-        .reset_index()
-    )
-    books_per_month_current_year.columns = ["date_read", "num_books"]
-    books_per_month_current_year["date_read"] = books_per_month_current_year[
-        "date_read"
-    ].apply(lambda x: calendar.month_abbr[x])
-
-    books_per_month_current_year.columns = ["Month", "Number of Books"]
-    return books_per_month_current_year
-
-
-@st.cache_data
-def books_read_by_month_and_year(df: pd.DataFrame) -> pd.DataFrame:
-    copy = df.copy()
-    copy["month"] = copy["date_read"].apply(lambda x: calendar.month_abbr[x.month])
-    copy["year"] = copy["date_read"].apply(lambda x: x.year)
-
-    copy = copy.groupby(["month", "year"]).size().reset_index(name="count")
-    return copy
-
-
-@st.cache_data
-def download_df(df: pd.DataFrame, format: str) -> bytes:
-    if format == "csv":
-        return df.to_csv(index=False).encode("utf-8")
-    elif format == "json":
-        return df.to_json(orient="records").encode("utf-8")
-    else:
-        raise ValueError(f"Format {format} not supported.")
+def save_data(df: pd.DataFrame) -> None:
+    df.to_csv("db.csv", index=False)
 
 
 def show_data(df: pd.DataFrame) -> None:
-    format_df(df)
-    df
+    df_utils.format_df_datetimes(df)
+    df[
+        [
+            "title",
+            "author",
+            "date_read",
+            "date_added",
+            "rating",
+            "num_pages",
+            "avg_rating",
+            "read_count",
+            "date_published",
+        ]
+    ]
 
     # --- Download buttons ---
     st.download_button(
         "Download as CSV",
-        download_df(df, "csv"),
+        df_utils.download_df(df, "csv"),
         "goodreads_export.csv",
         "text/csv",
         key="download-csv",
     )
     st.download_button(
         "Download as JSON",
-        download_df(df, "json"),
+        df_utils.download_df(df, "json"),
         "goodreads_export.json",
         "application/json",
         key="download-json",
@@ -194,59 +118,16 @@ def show_data(df: pd.DataFrame) -> None:
         st.write(f"- {rated_title}")
 
     # --- Current year's data ---
-    st.write("<hr/>", unsafe_allow_html=True)
     current_year = pd.to_datetime("today").year
-    df_read_current_year = df[df["date_read"].dt.year == current_year]
-    books_per_month_current_year = books_read_by_month(df_read_current_year)
 
+    st.write("<hr/>", unsafe_allow_html=True)
     row1_col1, _, row1_col2 = st.columns([0.4, 0.1, 0.4])
     with row1_col1:
-        st.write("### Books Read This Year")
-        chart = (
-            alt.Chart(books_per_month_current_year)
-            .mark_bar(color="#068D9D")
-            .encode(
-                x=alt.X("Month", sort=list(books_per_month_current_year["Month"])),
-                y="Number of Books",
-            )
-        )
-        st.altair_chart(chart, use_container_width=True)
+        df_read_current_year = df[df["date_read"].dt.year == current_year]
+        BooksReadThisYear(df_read_current_year).render_section()
 
     with row1_col2:
-        st.write("### Books Read Compared to Last Year")
-        months = [calendar.month_abbr[i] for i in range(1, 13)]
-        dates_and_counts = []
-        for month in months:
-            dates_and_counts.append([month, current_year - 1, 0])
-            dates_and_counts.append([month, current_year, 0])
-
-        base_df = pd.DataFrame(dates_and_counts, columns=["month", "year", "count"])
-        years = [current_year - 1, current_year]
-        books_last_two_years_df = df[df["date_read"].dt.year.isin(years)]
-        books_read_last_two_years_counts = books_read_by_month_and_year(
-            books_last_two_years_df
-        )
-        all_months_df = pd.concat([base_df, books_read_last_two_years_counts])
-
-        month_year_count_df = (
-            all_months_df.groupby(["month", "year"])["count"].sum().reset_index()
-        )
-
-        chart = (
-            alt.Chart(month_year_count_df)
-            .mark_line()
-            .encode(
-                x=alt.X("month", sort=months),
-                y="count:Q",
-                strokeWidth=alt.value(3),
-                color=alt.Color(
-                    "year:N",
-                    scale=alt.Scale(scheme="greenblue"),
-                ),
-                tooltip=["month", "count"],
-            )
-        )
-        st.altair_chart(chart)
+        BooksReadComparedToYear(df, current_year, current_year - 1).render_section()
 
     st.write("<hr/>", unsafe_allow_html=True)
     row2_col1, _, row2_col2 = st.columns([0.4, 0.1, 0.4])
@@ -293,14 +174,13 @@ def show_data(df: pd.DataFrame) -> None:
     row3_col1, _, row3_col2 = st.columns([0.4, 0.1, 0.4])
     with row3_col1:
         st.write("### Book Publish Year Distribution")
-        df_pub_dist = df[pd.notna(df["date_pub"])]["date_pub"].reset_index()
-        # df_pub_dist["date_pub"] = df_pub_dist["date_pub"].dt.year
+        df_pub_dist = df[pd.notna(df["date_published"])]["date_published"].reset_index()
         bar = (
             alt.Chart(df_pub_dist)
             .mark_bar(color="#80DED9", width=5)
             .encode(
                 x=alt.X(
-                    "date_pub",
+                    "date_published",
                     title="Year Published",
                     timeUnit="year",
                 ),
@@ -310,18 +190,47 @@ def show_data(df: pd.DataFrame) -> None:
         st.altair_chart(bar)
 
 
+def load_data_for_user(db, user_id, goodreads_url):
+    if not db.empty and not db[db["user_id"] == user_id].empty:
+        df = db[db["user_id"] == user_id]
+    else:
+        df = get_all_book_data_cached(goodreads_url)
+        upsert_data(db, df)
+    return df
+
+
+def upsert_data(db, df):
+    db.drop(db[db["user_id"] == user_id].index, inplace=True)
+    updated_db = pd.concat([db, df])
+    updated_db.to_csv("db.csv", index=False)
+
+
 st.set_page_config(page_title="Goodreads Visualizer", layout="wide")
 
 st.write("# Goodreads Visualizer")
 goodreads_url = st.text_input(
     "Enter your Goodreads URL",
     key="goodreads-url",
-    placeholder="https://www.goodreads.com/review/list/142394620?print=true",
+    placeholder="https://www.goodreads.com/review/list/142394620",
 )
 
+try:
+    db = pd.read_csv("db.csv")
+except Exception:
+    db = pd.DataFrame()
+
+user_id = None
+df = None
+
 if goodreads_url:
-    df = get_all_book_data(goodreads_url)
-    show_data(df)
+    user_id = int(url_utils.parse_user_id(goodreads_url))
+    df = load_data_for_user(db, user_id, goodreads_url)
 elif os.getenv("PYTHON_ENV") == "development" and st.button("Load Sample Data"):
     df = pd.read_csv("files/goodreads_export.csv")
+
+if user_id and st.button("Re-sync Goodreads Data"):
+    df = get_all_book_data(goodreads_url)
+    upsert_data(db, df)
+
+if df is not None:
     show_data(df)

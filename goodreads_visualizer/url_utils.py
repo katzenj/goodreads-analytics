@@ -4,7 +4,8 @@ from urllib.parse import parse_qs, urlencode, urlparse, urlunparse
 
 
 def format_goodreads_url(url: str, params: Dict[str, Union[str, int]] = {}) -> str:
-    user_url = _format_user_url(url)
+    user_id = parse_user_id(url)
+    user_url = _format_user_url(user_id)
     parsed_url = urlparse(user_url)
     query_params = parse_qs(parsed_url.query)
     query_params.update(params)
@@ -18,14 +19,16 @@ def format_goodreads_url(url: str, params: Dict[str, Union[str, int]] = {}) -> s
     return urlunparse(modified_parts)
 
 
-def _format_user_url(url: str) -> str:
-    parsed_url = urlparse(url)
-    if parsed_url.path.startswith("/user/show"):
-        user_id = parsed_url.path.split("/")[3]
-    elif parsed_url.path.startswith("/review/list"):
-        user_id = parsed_url.path.split("/")[3]
-    elif re.search(r"\d{9}(-\w+)?", url):
-        user_id = re.search(r"\d{9}(-\w+)?", url).group()
+def parse_user_id(url: str) -> str:
+    matches = re.findall(r"(\d{9})(?:-\w+)?", url)
+
+    if matches:
+        user_id = matches[0]
     else:
         raise ValueError("Invalid URL")
+
+    return user_id
+
+
+def _format_user_url(user_id: str) -> str:
     return f"https://www.goodreads.com/review/list/{user_id}"

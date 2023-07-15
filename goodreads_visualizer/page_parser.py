@@ -1,4 +1,6 @@
 import re
+from typing import Any, Optional, Union
+from datetime import datetime
 from bs4 import BeautifulSoup
 
 
@@ -30,6 +32,44 @@ class PageParser:
             page_numbers.append(page.get_text())
 
         return int(page_numbers[-1])
+
+    def _parse_date(self, row: Any, class_key: str) -> str:
+        date_text_from_row = (
+            row.find("td", {"class": f"field {class_key}"})
+            .find("div", {"class": "value"})
+            .get_text()
+            .strip()
+        )
+        date_match = re.match(self.DATE_PATTERN, date_text_from_row)
+
+        if date_match is None:
+            return None
+
+        date_str = date_match.group()
+        try:
+            return datetime.strptime(date_str, "%b %d, %Y").date()
+        except ValueError:
+            return datetime.strptime(date_str, "%b %Y").date()
+
+    def _parse_rating(self, row: Any) -> Optional[Union[int, float]]:
+        rating_str = (
+            row.find("td", {"class": "field rating"})
+            .find("div", {"class": "value"})
+            .get_text()
+            .strip()
+        )
+        if rating_str == "did not like it":
+            return 1
+        elif rating_str == "it was ok":
+            return 2
+        elif rating_str == "liked it":
+            return 3
+        elif rating_str == "really liked it":
+            return 4
+        elif rating_str == "it was amazing":
+            return 5
+        else:
+            return None
 
     def _parse_book_row(self, book_row) -> None:
         title = (
@@ -65,12 +105,7 @@ class PageParser:
             .get_text()
             .strip()
         )
-        rating = (
-            book_row.find("td", {"class": "field rating"})
-            .find("div", {"class": "value"})
-            .get_text()
-            .strip()
-        )
+        rating = self._parse_rating(book_row)
         review = (
             book_row.find("td", {"class": "field review"})
             .find("div", {"class": "value"})
@@ -83,37 +118,12 @@ class PageParser:
             .get_text()
             .strip()
         )
-        date_pub = (
-            book_row.find("td", {"class": "field date_pub"})
-            .find("div", {"class": "value"})
-            .get_text()
-            .strip()
-        )
+        date_published = self._parse_date(book_row, "date_pub")
         # TODO: when read count > 1, date_started is a list of dates
-        date_started_base = (
-            book_row.find("td", {"class": "field date_started"})
-            .find("div", {"class": "value"})
-            .get_text()
-            .strip()
-        )
-
-        date_started_match = re.match(self.DATE_PATTERN, date_started_base)
-        date_started = date_started_match.group() if date_started_match else None
+        date_started = self._parse_date(book_row, "date_started")
         # TODO: when read count > 1, date_read is a list of dates
-        date_read_base = (
-            book_row.find("td", {"class": "field date_read"})
-            .find("div", {"class": "value"})
-            .get_text()
-            .strip()
-        )
-        date_read_match = re.match(self.DATE_PATTERN, date_read_base)
-        date_read = date_read_match.group() if date_read_match else None
-        date_added = (
-            book_row.find("td", {"class": "field date_added"})
-            .find("div", {"class": "value"})
-            .get_text()
-            .strip()
-        )
+        date_read = self._parse_date(book_row, "date_read")
+        date_added = self._parse_date(book_row, "date_added")
         return {
             "title": title,
             "author": author,
@@ -123,7 +133,7 @@ class PageParser:
             "rating": rating,
             "review": review,
             "read_count": read_count,
-            "date_pub": date_pub,
+            "date_published": date_published,
             "date_started": date_started,
             "date_read": date_read,
             "date_added": date_added,
