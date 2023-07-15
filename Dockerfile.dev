@@ -1,13 +1,14 @@
 FROM python:3.10-slim
 
-# Set the working directory inside the container
 WORKDIR /app
 
 COPY requirements.txt .
 RUN python -m pip install --upgrade pip
 RUN python -m pip install -r requirements.txt
 
-COPY . .
+COPY ./data ./data
+COPY ./files ./files
+COPY ./goodreads_visualizer .
 
 ENV PYTHON_ENV=development
 

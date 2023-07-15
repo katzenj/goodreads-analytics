@@ -16,6 +16,23 @@ except ModuleNotFoundError:
     import page_parser
     import url_utils
 
+ALL_COLUMNS = [
+    "title",
+    "author",
+    "isbn",
+    "date_read",
+    "date_added",
+    "rating",
+    "num_pages",
+    "avg_rating",
+    "read_count",
+    "date_published",
+    "date_started",
+    "review",
+    "user_id",
+    "synced_at",
+]
+
 
 @st.cache_data(show_spinner=False)
 def get_all_book_data_cached(base_url: str) -> pd.DataFrame:
@@ -55,13 +72,9 @@ def get_all_book_data(base_url: str) -> pd.DataFrame:
     return df
 
 
-def save_data(df: pd.DataFrame) -> None:
-    df.to_csv("db.csv", index=False)
-
-
 def show_data(df: pd.DataFrame) -> None:
     df_utils.format_df_datetimes(df)
-    df[
+    df_reset_index = df[
         [
             "title",
             "author",
@@ -73,7 +86,8 @@ def show_data(df: pd.DataFrame) -> None:
             "read_count",
             "date_published",
         ]
-    ]
+    ].reset_index(drop=True)
+    df_reset_index
 
     # --- Download buttons ---
     st.download_button(
@@ -191,7 +205,7 @@ def show_data(df: pd.DataFrame) -> None:
 
 
 def load_data_for_user(db, user_id, goodreads_url):
-    if not db.empty and not db[db["user_id"] == user_id].empty:
+    if not db[db["user_id"] == user_id].empty:
         df = db[db["user_id"] == user_id]
     else:
         df = get_all_book_data_cached(goodreads_url)
@@ -202,7 +216,7 @@ def load_data_for_user(db, user_id, goodreads_url):
 def upsert_data(db, df):
     db.drop(db[db["user_id"] == user_id].index, inplace=True)
     updated_db = pd.concat([db, df])
-    updated_db.to_csv("db.csv", index=False)
+    updated_db.to_csv("data/db.csv", index=False)
 
 
 st.set_page_config(page_title="Goodreads Visualizer", layout="wide")
@@ -215,9 +229,9 @@ goodreads_url = st.text_input(
 )
 
 try:
-    db = pd.read_csv("db.csv")
+    db = pd.read_csv("data/db.csv")
 except Exception:
-    db = pd.DataFrame()
+    db = pd.DataFrame(columns=ALL_COLUMNS)
 
 user_id = None
 df = None
