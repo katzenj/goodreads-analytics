@@ -72,6 +72,9 @@ class PageParser:
             return None
 
     def _parse_book_row(self, book_row) -> None:
+        cover_url = (
+            book_row.find("td", {"class": "field cover"}).find("img").get("src")
+        )
         title = (
             book_row.find("td", {"class": "field title"})
             .find("div", {"class": "value"})
@@ -137,4 +140,5 @@ class PageParser:
             "date_started": date_started,
             "date_read": date_read,
             "date_added": date_added,
+            "cover_url": cover_url,
         }

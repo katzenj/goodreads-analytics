@@ -2,4 +2,3 @@
 
 docker build -f Dockerfile.dev -t goodreads-visualizer .
 docker run -p 8501:8501 -v $(pwd):/app goodreads-visualizer
-

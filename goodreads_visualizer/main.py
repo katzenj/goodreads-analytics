@@ -84,26 +84,27 @@ def show_data(df: pd.DataFrame) -> None:
             "num_pages",
             "avg_rating",
             "read_count",
-            "date_published",
+            "date_published"
         ]
     ].reset_index(drop=True)
-    df_reset_index
+    with st.expander("Show data in table"):
+        df_reset_index
 
-    # --- Download buttons ---
-    st.download_button(
-        "Download as CSV",
-        df_utils.download_df(df, "csv"),
-        "goodreads_export.csv",
-        "text/csv",
-        key="download-csv",
-    )
-    st.download_button(
-        "Download as JSON",
-        df_utils.download_df(df, "json"),
-        "goodreads_export.json",
-        "application/json",
-        key="download-json",
-    )
+        # --- Download buttons ---
+        st.download_button(
+            "Download as CSV",
+            df_utils.download_df(df, "csv"),
+            "goodreads_export.csv",
+            "text/csv",
+            key="download-csv",
+        )
+        st.download_button(
+            "Download as JSON",
+            df_utils.download_df(df, "json"),
+            "goodreads_export.json",
+            "application/json",
+            key="download-json",
+        )
 
     current_year = pd.to_datetime("today").year
 
@@ -115,21 +116,37 @@ def show_data(df: pd.DataFrame) -> None:
 
     year = st.selectbox("Year", dates, index=0)
     df_read_year = df[df["date_read"].dt.year == int(year)]
-    st.metric("Books read", df_read_year.shape[0])
-    st.metric("Average book rating", round(df_read_year["rating"].mean(), 2))
-    st.metric("Average book length", f'{int(df_read_year["num_pages"].mean())} pages')
-    highest_rated_books = df_read_year[
-        df_read_year["rating"] == df_read_year["rating"].max()
-    ]
-    title = (
-        "Highest rated books"
-        if len(highest_rated_books["title"]) > 1
-        else "Highest rated book"
-    )
-    st.metric("Highest rating", highest_rated_books["rating"].max())
-    st.write(title)
-    for rated_title in highest_rated_books["title"]:
-        st.write(f"- {rated_title}")
+    col1, col2 = st.columns(2)
+
+    with col1:
+        st.metric("Books read", df_read_year.shape[0])
+        st.metric("Average book length", f'{int(df_read_year["num_pages"].mean())} pages')
+
+        with st.expander(f"Show all books read in {year}"):
+            for row in df_read_year.iterrows():
+                row_vals = row[1]
+                st.write(f" - {row_vals['title']} by {row_vals['author']}")
+
+
+    with col2:
+        st.metric("Average book rating", round(df_read_year["rating"].mean(), 2))
+        highest_rated_books = df_read_year[
+            df_read_year["rating"] == df_read_year["rating"].max()
+        ]
+        title = (
+            "Highest rated books"
+            if len(highest_rated_books["title"]) > 1
+            else "Highest rated book"
+        )
+        st.metric("Highest rating", highest_rated_books["rating"].max())
+
+        with st.expander(title):
+            for row in highest_rated_books.iterrows():
+                cover_url = row[1]["cover_url"]
+                rated_title = row[1]["title"]
+                st.write(f"- {rated_title}")
+                if cover_url is not None and pd.notna(cover_url):
+                    st.image(cover_url)
 
     # --- Current year's data ---
     current_year = pd.to_datetime("today").year

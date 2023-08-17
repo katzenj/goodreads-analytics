@@ -41,6 +41,7 @@ def download_df(df: pd.DataFrame, format: str) -> bytes:
             "read_count",
             "date_published",
             "date_started",
+            "cover_url",
         ]
     ]
     copy["date_read"] = copy["date_read"].apply(convert_datetime_to_string)
