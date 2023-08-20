@@ -120,11 +120,7 @@ celerybeat.pid
 *.sage.py
 
 # Environments
-.env
-<<<<<<< HEAD
-=======
 .env*
->>>>>>> 1788a39 (Goodreads analytics and export functionality)
 .venv
 env/
 venv/
