@@ -71,23 +71,34 @@ class PageParser:
         else:
             return None
 
-    def _parse_book_row(self, book_row) -> None:
-        cover_url = (
-            book_row.find("td", {"class": "field cover"}).find("img").get("src")
-        )
-        title = (
-            book_row.find("td", {"class": "field title"})
-            .find("div", {"class": "value"})
-            .get_text()
-            .strip()
-        )
-        author = (
-            book_row.find("td", {"class": "field author"})
+    def _parse_author(self, row: Any) -> str:
+        name = (
+            row.find("td", {"class": "field author"})
             .find("div", {"class": "value"})
             .get_text()
             .strip()
             .replace("\n*", "")
         )
+
+        author_names = name.split(",")
+        if len(author_names) > 2:
+            return ", ".join(author_names)
+
+        if len(author_names) == 1:
+            return author_names[0].strip()
+
+        return f"{author_names[1].strip()} {author_names[0].strip()}"
+
+    def _parse_book_row(self, book_row) -> None:
+        cover_url = book_row.find("td", {"class": "field cover"}).find("img").get("src")
+        title = (
+            book_row.find("td", {"class": "field title"})
+            .find("div", {"class": "value"})
+            .get_text()
+            .strip()
+            .replace("\n", "")
+        )
+        author = self._parse_author(book_row)
         isbn = (
             book_row.find("td", {"class": "field isbn"})
             .find("div", {"class": "value"})

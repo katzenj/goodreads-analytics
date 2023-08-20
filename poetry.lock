@@ -19,6 +19,32 @@ dev = ["black (<24)", "hatch", "ipython", "m2r", "mypy", "pandas-stubs", "pytest
 doc = ["docutils", "geopandas", "jinja2", "myst-parser", "numpydoc", "pillow", "pydata-sphinx-theme", "sphinx", "sphinx-copybutton", "sphinx-design", "sphinxext-altair"]
 
 [[package]]
+name = "annotated-types"
+version = "0.5.0"
+description = "Reusable constraint types to use with typing.Annotated"
+category = "main"
+optional = false
+python-versions = ">=3.7"
+
+[[package]]
+name = "anyio"
+version = "3.7.1"
+description = "High level compatibility layer for multiple asynchronous event loop implementations"
+category = "main"
+optional = false
+python-versions = ">=3.7"
+
+[package.dependencies]
+exceptiongroup = {version = "*", markers = "python_version < \"3.11\""}
+idna = ">=2.8"
+sniffio = ">=1.1"
+
+[package.extras]
+doc = ["packaging", "sphinx", "sphinx-rtd-theme (>=1.2.2)", "sphinxcontrib-jquery", "sphinx-autodoc-typehints (>=1.2.0)"]
+test = ["anyio", "coverage[toml] (>=4.5)", "hypothesis (>=4.0)", "psutil (>=5.9)", "pytest (>=7.0)", "pytest-mock (>=3.6.1)", "trustme", "uvloop (>=0.17)", "mock (>=4)"]
+trio = ["trio (<0.22)"]
+
+[[package]]
 name = "appnope"
 version = "0.1.3"
 description = "Disable App Nap on macOS >= 10.9"
@@ -173,6 +199,36 @@ optional = false
 python-versions = ">=3.5"
 
 [[package]]
+name = "deprecation"
+version = "2.1.0"
+description = "A library to handle automated deprecations"
+category = "main"
+optional = false
+python-versions = "*"
+
+[package.dependencies]
+packaging = "*"
+
+[[package]]
+name = "dominate"
+version = "2.8.0"
+description = "Dominate is a Python library for creating and manipulating HTML documents using an elegant DOM API."
+category = "main"
+optional = false
+python-versions = ">=2.7, !=3.0.*, !=3.1.*, !=3.2.*, !=3.3.*"
+
+[[package]]
+name = "exceptiongroup"
+version = "1.1.3"
+description = "Backport of PEP 654 (exception groups)"
+category = "main"
+optional = false
+python-versions = ">=3.7"
+
+[package.extras]
+test = ["pytest (>=6)"]
+
+[[package]]
 name = "executing"
 version = "1.2.0"
 description = "Get the currently executing AST node of a frame, and other information"
@@ -204,6 +260,64 @@ python-versions = ">=3.7"
 
 [package.dependencies]
 gitdb = ">=4.0.1,<5"
+
+[[package]]
+name = "gotrue"
+version = "1.0.3"
+description = "Python Client Library for GoTrue"
+category = "main"
+optional = false
+python-versions = ">=3.8,<4.0"
+
+[package.dependencies]
+httpx = ">=0.23,<0.25"
+pydantic = ">=2.1,<3.0"
+
+[[package]]
+name = "h11"
+version = "0.14.0"
+description = "A pure-Python, bring-your-own-I/O implementation of HTTP/1.1"
+category = "main"
+optional = false
+python-versions = ">=3.7"
+
+[[package]]
+name = "httpcore"
+version = "0.17.3"
+description = "A minimal low-level HTTP client."
+category = "main"
+optional = false
+python-versions = ">=3.7"
+
+[package.dependencies]
+anyio = ">=3.0,<5.0"
+certifi = "*"
+h11 = ">=0.13,<0.15"
+sniffio = ">=1.0.0,<2.0.0"
+
+[package.extras]
+http2 = ["h2 (>=3,<5)"]
+socks = ["socksio (>=1.0.0,<2.0.0)"]
+
+[[package]]
+name = "httpx"
+version = "0.24.1"
+description = "The next generation HTTP client."
+category = "main"
+optional = false
+python-versions = ">=3.7"
+
+[package.dependencies]
+certifi = "*"
+httpcore = ">=0.15.0,<0.18.0"
+idna = "*"
+sniffio = "*"
+
+[package.extras]
+brotli = ["brotli", "brotlicffi"]
+cli = ["click (>=8.0.0,<9.0.0)", "pygments (>=2.0.0,<3.0.0)", "rich (>=10,<14)"]
+http2 = ["h2 (>=3,<5)"]
+socks = ["socksio (>=1.0.0,<2.0.0)"]
 
 [[package]]
 name = "idna"
@@ -557,6 +671,20 @@ docs = ["furo (>=2023.5.20)", "proselint (>=0.13)", "sphinx-autodoc-typehints (>
 test = ["appdirs (==1.4.4)", "covdefaults (>=2.3)", "pytest-cov (>=4.1)", "pytest-mock (>=3.10)", "pytest (>=7.3.1)"]
 
 [[package]]
+name = "postgrest"
+version = "0.10.8"
+description = "PostgREST client for Python. This library provides an ORM interface to PostgREST."
+category = "main"
+optional = false
+python-versions = ">=3.8,<4.0"
+
+[package.dependencies]
+deprecation = ">=2.1.0,<3.0.0"
+httpx = ">=0.24.0,<0.25.0"
+pydantic = ">=2.1.0,<3.0"
+strenum = ">=0.4.9,<0.5.0"
+
+[[package]]
 name = "prompt-toolkit"
 version = "3.0.39"
 description = "Library for building powerful interactive command lines in Python"
@@ -625,6 +753,33 @@ optional = false
 python-versions = ">=2.7, !=3.0.*, !=3.1.*, !=3.2.*, !=3.3.*"
 
 [[package]]
+name = "pydantic"
+version = "2.2.0"
+description = "Data validation using Python type hints"
+category = "main"
+optional = false
+python-versions = ">=3.7"
+
+[package.dependencies]
+annotated-types = ">=0.4.0"
+pydantic-core = "2.6.0"
+typing-extensions = ">=4.6.1"
+
+[package.extras]
+email = ["email-validator (>=2.0.0)"]
+
+[[package]]
+name = "pydantic-core"
+version = "2.6.0"
+description = ""
+category = "main"
+optional = false
+python-versions = ">=3.7"
+
+[package.dependencies]
+typing-extensions = ">=4.6.0,<4.7.0 || >4.7.0"
+
+[[package]]
 name = "pydeck"
 version = "0.8.1b0"
 description = "Widget for deck.gl maps"
@@ -671,6 +826,17 @@ python-versions = "!=3.0.*,!=3.1.*,!=3.2.*,>=2.7"
 six = ">=1.5"
 
 [[package]]
+name = "python-dotenv"
+version = "1.0.0"
+description = "Read key-value pairs from a .env file and set them as environment variables"
+category = "main"
+optional = false
+python-versions = ">=3.8"
+
+[package.extras]
+cli = ["click (>=5.0)"]
+
+[[package]]
 name = "pytz"
 version = "2023.3"
 description = "World timezone definitions, modern and historical"
@@ -707,6 +873,19 @@ python-versions = ">=3.6"
 
 [package.dependencies]
 cffi = {version = "*", markers = "implementation_name == \"pypy\""}
+
+[[package]]
+name = "realtime"
+version = "1.0.0"
+description = ""
+category = "main"
+optional = false
+python-versions = ">=3.8,<4.0"
+
+[package.dependencies]
+python-dateutil = ">=2.8.1,<3.0.0"
+typing-extensions = ">=4.2.0,<5.0.0"
+websockets = ">=10.3,<11.0"
 
 [[package]]
 name = "referencing"
@@ -778,6 +957,14 @@ optional = false
 python-versions = ">=3.6"
 
 [[package]]
+name = "sniffio"
+version = "1.3.0"
+description = "Sniff out which async library your code is running under"
+category = "main"
+optional = false
+python-versions = ">=3.7"
+
+[[package]]
 name = "soupsieve"
 version = "2.4.1"
 description = "A modern CSS selector implementation for Beautiful Soup."
@@ -800,6 +987,19 @@ pure-eval = "*"
 
 [package.extras]
 tests = ["pytest", "typeguard", "pygments", "littleutils", "cython"]
+
+[[package]]
+name = "storage3"
+version = "0.5.4"
+description = "Supabase Storage client for Python."
+category = "main"
+optional = false
+python-versions = ">=3.8,<4.0"
+
+[package.dependencies]
+httpx = ">=0.24,<0.25"
+python-dateutil = ">=2.8.2,<3.0.0"
+typing-extensions = ">=4.2.0,<5.0.0"
 
 [[package]]
 name = "streamlit"
@@ -837,6 +1037,46 @@ watchdog = {version = "*", markers = "platform_system != \"Darwin\""}
 
 [package.extras]
 snowflake = ["snowflake-snowpark-python"]
+
+[[package]]
+name = "strenum"
+version = "0.4.15"
+description = "An Enum that inherits from str."
+category = "main"
+optional = false
+python-versions = "*"
+
+[package.extras]
+docs = ["sphinx", "sphinx-rtd-theme", "myst-parser"]
+release = ["twine"]
+test = ["pytest", "pytest-black", "pytest-cov", "pytest-pylint", "pylint"]
+
+[[package]]
+name = "supabase"
+version = "1.0.4"
+description = "Supabase client for Python."
+category = "main"
+optional = false
+python-versions = ">=3.8,<4.0"
+
+[package.dependencies]
+gotrue = ">=1.0.3,<2.0.0"
+httpx = ">=0.24.0,<0.25.0"
+postgrest = ">=0.10.8,<0.11.0"
+realtime = ">=1.0.0,<2.0.0"
+storage3 = ">=0.5.3,<0.6.0"
+supafunc = ">=0.2.3,<0.3.0"
+
+[[package]]
+name = "supafunc"
+version = "0.2.3"
+description = "Library for Supabase Functions"
+category = "main"
+optional = false
+python-versions = ">=3.8,<4.0"
+
+[package.dependencies]
+httpx = ">=0.24.0,<0.25.0"
 
 [[package]]
 name = "tenacity"
@@ -964,6 +1204,14 @@ optional = false
 python-versions = "*"
 
 [[package]]
+name = "websockets"
+version = "10.4"
+description = "An implementation of the WebSocket Protocol (RFC 6455 & 7692)"
+category = "main"
+optional = false
+python-versions = ">=3.7"
+
+[[package]]
 name = "zipp"
 version = "3.16.1"
 description = "Backport of pathlib-compatible object wrapper for zip files"
@@ -978,10 +1226,12 @@ testing = ["pytest (>=6)", "pytest-checkdocs (>=2.4)", "pytest-cov", "pytest-ena
 [metadata]
 lock-version = "1.1"
 python-versions = "^3.10"
-content-hash = "c924b9bdc18c07e795a2ae2e750133f93fd57117c239c298b113213a1ab7bcac"
+content-hash = "4c12b590027b4e9e62a606ada37c2b8096b93409335c73b94e6045eaca37aceb"
 
 [metadata.files]
 altair = []
+annotated-types = []
+anyio = []
 appnope = []
 asttokens = []
 attrs = []
@@ -997,9 +1247,16 @@ colorama = []
 comm = []
 debugpy = []
 decorator = []
+deprecation = []
+dominate = []
+exceptiongroup = []
 executing = []
 gitdb = []
 gitpython = []
+gotrue = []
+h11 = []
+httpcore = []
+httpx = []
 idna = []
 importlib-metadata = []
 ipykernel = []
@@ -1023,6 +1280,7 @@ pexpect = []
 pickleshare = []
 pillow = []
 platformdirs = []
+postgrest = []
 prompt-toolkit = []
 protobuf = []
 psutil = []
@@ -1030,23 +1288,32 @@ ptyprocess = []
 pure-eval = []
 pyarrow = []
 pycparser = []
+pydantic = []
+pydantic-core = []
 pydeck = []
 pygments = []
 pympler = []
 python-dateutil = []
+python-dotenv = []
 pytz = []
 pytz-deprecation-shim = []
 pywin32 = []
 pyzmq = []
+realtime = []
 referencing = []
 requests = []
 rich = []
 rpds-py = []
 six = []
 smmap = []
+sniffio = []
 soupsieve = []
 stack-data = []
+storage3 = []
 streamlit = []
+strenum = []
+supabase = []
+supafunc = []
 tenacity = []
 toml = []
 toolz = []
@@ -1059,4 +1326,5 @@ urllib3 = []
 validators = []
 watchdog = []
 wcwidth = []
+websockets = []
 zipp = []

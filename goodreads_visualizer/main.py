@@ -1,19 +1,28 @@
-import datetime
+from datetime import datetime, timedelta
 import os
+from typing import Any, Dict, List, Optional
 import pandas as pd
 import requests
 import streamlit as st
 
 import altair as alt
 
+from dominate.tags import div, img, p
+from dotenv import load_dotenv
+from supabase import create_client, Client
+
+
+load_dotenv(".env")
+
 
 try:
-    from goodreads_visualizer import page_parser, url_utils, df_utils
+    from goodreads_visualizer import page_parser, url_utils, df_utils, upsert_utils
     from goodreads_visualizer.sections import BooksReadThisYear, BooksReadComparedToYear
 except ModuleNotFoundError:
     from sections import BooksReadThisYear, BooksReadComparedToYear
     import df_utils
     import page_parser
+    import upsert_utils
     import url_utils
 
 ALL_COLUMNS = [
@@ -30,8 +39,12 @@ ALL_COLUMNS = [
     "date_started",
     "review",
     "user_id",
-    "synced_at",
 ]
+
+
+url = os.getenv("SUPABASE_URL")
+key = os.getenv("SERVICE_KEY")
+supabase: Client = create_client(url, key)
 
 
 @st.cache_data(show_spinner=False)
@@ -68,26 +81,26 @@ def get_all_book_data(base_url: str) -> pd.DataFrame:
 
     df = pd.DataFrame(all_data)
     df["user_id"] = user_id
-    df["synced_at"] = datetime.datetime.now()
     return df
 
 
 def show_data(df: pd.DataFrame) -> None:
     df_utils.format_df_datetimes(df)
-    df_reset_index = df[
-        [
-            "title",
-            "author",
-            "date_read",
-            "date_added",
-            "rating",
-            "num_pages",
-            "avg_rating",
-            "read_count",
-            "date_published"
-        ]
-    ].reset_index(drop=True)
+
     with st.expander("Show data in table"):
+        df_reset_index = df[
+            [
+                "title",
+                "author",
+                "date_read",
+                "date_added",
+                "rating",
+                "num_pages",
+                "avg_rating",
+                "read_count",
+                "date_published",
+            ]
+        ].reset_index(drop=True)
         df_reset_index
 
         # --- Download buttons ---
@@ -120,13 +133,20 @@ def show_data(df: pd.DataFrame) -> None:
 
     with col1:
         st.metric("Books read", df_read_year.shape[0])
-        st.metric("Average book length", f'{int(df_read_year["num_pages"].mean())} pages')
+        st.metric(
+            "Average book length", f'{int(df_read_year["num_pages"].mean())} pages'
+        )
 
         with st.expander(f"Show all books read in {year}"):
+            div_ele = div(class_name="book-list")
             for row in df_read_year.iterrows():
-                row_vals = row[1]
-                st.write(f" - {row_vals['title']} by {row_vals['author']}")
+                row_values = row[1]
+                list_div = div(class_name="book-list-item")
+                list_div.add(img(src=row_values["cover_url"]))
+                list_div.add(p(f"{row_values['title']} by {row_values['author']}"))
+                div_ele.add(list_div)
 
+            st.write(str(div_ele), unsafe_allow_html=True)
 
     with col2:
         st.metric("Average book rating", round(df_read_year["rating"].mean(), 2))
@@ -221,22 +241,79 @@ def show_data(df: pd.DataFrame) -> None:
         st.altair_chart(bar)
 
 
-def load_data_for_user(db, user_id, goodreads_url):
-    if not db[db["user_id"] == user_id].empty:
-        df = db[db["user_id"] == user_id]
+def load_data_for_user_from_db(user_id: str) -> List[Dict[str, Any]]:
+    res = supabase.table("books").select("*").eq("user_id", user_id).execute()
+    return res.data
+
+
+def load_data_for_user(
+    user_data: List[Dict[str, Any]], user_id: str, goodreads_url: str
+) -> pd.DataFrame:
+    last_sync = (
+        supabase.table("syncs")
+        .select("*")
+        .eq("user_id", user_id)
+        .order("id", desc=True)
+        .limit(1)
+        .execute()
+        .data
+    )
+
+    df = None
+    if (
+        len(user_data) > 0
+        and last_sync is not None
+        # If last sync was more than a day ago, refresh data
+        and last_sync[0]["created_at"] < datetime.now() - timedelta(days=1)
+    ):
+        df = pd.DataFrame(user_data)
     else:
         df = get_all_book_data_cached(goodreads_url)
-        upsert_data(db, df)
+        upsert_data(user_id, df)
+
+    df["date_read"] = pd.to_datetime(df["date_read"]).dt.strftime("%b %d, %Y")
+    df["date_published"] = pd.to_datetime(df["date_published"]).dt.strftime("%b %d, %Y")
+    df["date_added"] = pd.to_datetime(df["date_added"]).dt.strftime("%b %d, %Y")
+
     return df
 
 
-def upsert_data(db, df):
-    db.drop(db[db["user_id"] == user_id].index, inplace=True)
-    updated_db = pd.concat([db, df])
-    updated_db.to_csv("data/db.csv", index=False)
+def upsert_data(user_id: Optional[str], df: pd.DataFrame) -> bool:
+    last_sync = (
+        supabase.table("syncs")
+        .select("*")
+        .eq("user_id", user_id)
+        .order("id", desc=True)
+        .limit(1)
+        .execute()
+        .data
+    )
+    if len(last_sync) > 0 and last_sync[0]["created_at"] > (
+        datetime.now() - timedelta(minutes=5)
+    ):
+        print("Synced in last 5 minutes, skipping")
+        return False
+
+    if user_id is None:
+        return False
+
+    df_to_save = df.where(pd.notna(df), None)
+    df_to_save.fillna("", inplace=True)  # Fill the rating and other Nans
+
+    rows_to_upsert = []
+    for row in df_to_save.iterrows():
+        row_data = upsert_utils.prepare_row_for_upsert(row[1].to_dict())
+        rows_to_upsert.append(row_data)
+
+    supabase.table("books").upsert(rows_to_upsert).execute()
+    supabase.table("syncs").insert({"user_id": user_id}).execute()
+    return True
 
 
 st.set_page_config(page_title="Goodreads Visualizer", layout="wide")
+
+with open("files/style.css") as f:
+    st.markdown(f"<style>{f.read()}</style>", unsafe_allow_html=True)
 
 st.write("# Goodreads Visualizer")
 goodreads_url = st.text_input(
@@ -245,23 +322,22 @@ goodreads_url = st.text_input(
     placeholder="https://www.goodreads.com/review/list/142394620",
 )
 
-try:
-    db = pd.read_csv("data/db.csv")
-except Exception:
-    db = pd.DataFrame(columns=ALL_COLUMNS)
-
 user_id = None
 df = None
+user_data = []
 
 if goodreads_url:
     user_id = int(url_utils.parse_user_id(goodreads_url))
-    df = load_data_for_user(db, user_id, goodreads_url)
+    user_data = load_data_for_user_from_db(user_id)
+    df = load_data_for_user(user_data, user_id, goodreads_url)
 elif os.getenv("PYTHON_ENV") == "development" and st.button("Load Sample Data"):
-    df = pd.read_csv("files/goodreads_export.csv")
+    user_data_base = pd.read_csv("files/goodreads_export.csv")
+    user_data = user_data_base.to_dict("records")
+    df = load_data_for_user(user_data, user_id, goodreads_url)
 
 if user_id and st.button("Re-sync Goodreads Data"):
     df = get_all_book_data(goodreads_url)
-    upsert_data(db, df)
+    upsert_data(user_id, df)
 
 if df is not None:
     show_data(df)
