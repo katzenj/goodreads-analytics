@@ -263,6 +263,7 @@ def load_data_for_user(
     if (
         len(user_data) > 0
         and last_sync is not None
+        and len(last_sync) > 0
         # If last sync was more than a day ago, refresh data
         and last_sync[0]["created_at"] < datetime.now() - timedelta(days=1)
     ):
