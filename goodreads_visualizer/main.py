@@ -1,12 +1,13 @@
-from datetime import datetime, timedelta
-import os
 from typing import Any, Dict, List, Optional
+
+import altair as alt
+import os
 import pandas as pd
 import requests
 import streamlit as st
 
-import altair as alt
-
+from datetime import datetime, timedelta
+from dateutil.parser import parse
 from dominate.tags import div, img, p
 from dotenv import load_dotenv
 from supabase import create_client, Client
@@ -246,9 +247,7 @@ def load_data_for_user_from_db(user_id: str) -> List[Dict[str, Any]]:
     return res.data
 
 
-def load_data_for_user(
-    user_data: List[Dict[str, Any]], user_id: str, goodreads_url: str
-) -> pd.DataFrame:
+def get_last_sync_date(user_id):
     last_sync = (
         supabase.table("syncs")
         .select("*")
@@ -259,14 +258,26 @@ def load_data_for_user(
         .data
     )
 
+    if last_sync is None or len(last_sync) == 0:
+        return None
+
+    return parse(last_sync[0]["created_at"]).replace(tzinfo=None)
+
+
+def load_synced_user_data(user_id):
+    last_sync_date = get_last_sync_date(user_id)
+    if last_sync_date is None:
+        return False
+
+    return last_sync_date < datetime.now() - timedelta(days=1)
+
+
+def load_data_for_user(
+    user_data: List[Dict[str, Any]], user_id: str, goodreads_url: str
+) -> pd.DataFrame:
+
     df = None
-    if (
-        len(user_data) > 0
-        and last_sync is not None
-        and len(last_sync) > 0
-        # If last sync was more than a day ago, refresh data
-        and last_sync[0]["created_at"] < datetime.now() - timedelta(days=1)
-    ):
+    if len(user_data) > 0 and load_synced_user_data(user_id):
         df = pd.DataFrame(user_data)
     else:
         df = get_all_book_data_cached(goodreads_url)
@@ -280,18 +291,8 @@ def load_data_for_user(
 
 
 def upsert_data(user_id: Optional[str], df: pd.DataFrame) -> bool:
-    last_sync = (
-        supabase.table("syncs")
-        .select("*")
-        .eq("user_id", user_id)
-        .order("id", desc=True)
-        .limit(1)
-        .execute()
-        .data
-    )
-    if len(last_sync) > 0 and last_sync[0]["created_at"] > (
-        datetime.now() - timedelta(minutes=5)
-    ):
+    last_sync_date = get_last_sync_date(user_id)
+    if last_sync_date is not None and last_sync_date < datetime.now() - timedelta(minutes=5):
         print("Synced in last 5 minutes, skipping")
         return False
 
