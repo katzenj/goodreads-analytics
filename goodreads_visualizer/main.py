@@ -269,7 +269,8 @@ def load_synced_user_data(user_id):
     if last_sync_date is None:
         return False
 
-    return last_sync_date < datetime.now() - timedelta(days=1)
+    # Last synced less than a day ago
+    return last_sync_date >= datetime.now() - timedelta(days=1)
 
 
 def load_data_for_user(
@@ -292,7 +293,7 @@ def load_data_for_user(
 
 def upsert_data(user_id: Optional[str], df: pd.DataFrame) -> bool:
     last_sync_date = get_last_sync_date(user_id)
-    if last_sync_date is not None and last_sync_date < datetime.now() - timedelta(minutes=5):
+    if last_sync_date is not None and last_sync_date >= datetime.now() - timedelta(minutes=5):
         print("Synced in last 5 minutes, skipping")
         return False
 
@@ -337,9 +338,13 @@ elif os.getenv("PYTHON_ENV") == "development" and st.button("Load Sample Data"):
     user_data = user_data_base.to_dict("records")
     df = load_data_for_user(user_data, user_id, goodreads_url)
 
-if user_id and st.button("Re-sync Goodreads Data"):
-    df = get_all_book_data(goodreads_url)
-    upsert_data(user_id, df)
+
+if user_id:
+    load_sync_data = load_synced_user_data(user_id)
+
+    if not load_sync_data and st.button("Re-sync Goodreads Data"):
+        df = get_all_book_data(goodreads_url)
+        upsert_data(user_id, df)
 
 if df is not None:
     show_data(df)
