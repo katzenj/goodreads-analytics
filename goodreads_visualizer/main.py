@@ -13,7 +13,10 @@ from dotenv import load_dotenv
 from supabase import create_client, Client
 
 
-load_dotenv(".env")
+if os.getenv("PYTHON_ENV") == "development":
+    load_dotenv(".env.local")
+else:
+    load_dotenv(".env")
 
 
 try:
@@ -242,7 +245,7 @@ def show_data(df: pd.DataFrame) -> None:
         st.altair_chart(bar)
 
 
-def load_data_for_user_from_db(user_id: str) -> List[Dict[str, Any]]:
+def load_data_for_user_from_db(user_id: int) -> List[Dict[str, Any]]:
     res = supabase.table("books").select("*").eq("user_id", user_id).execute()
     return res.data
 
@@ -274,7 +277,7 @@ def load_synced_user_data(user_id):
 
 
 def load_data_for_user(
-    user_data: List[Dict[str, Any]], user_id: str, goodreads_url: str
+    user_data: List[Dict[str, Any]], user_id: int, goodreads_url: str
 ) -> pd.DataFrame:
 
     df = None
@@ -291,9 +294,12 @@ def load_data_for_user(
     return df
 
 
-def upsert_data(user_id: Optional[str], df: pd.DataFrame) -> bool:
+def upsert_data(user_id: Optional[int], df: pd.DataFrame) -> bool:
     last_sync_date = get_last_sync_date(user_id)
-    if last_sync_date is not None and last_sync_date >= datetime.now() - timedelta(minutes=5):
+    if (
+        last_sync_date is not None and
+        last_sync_date >= datetime.now() - timedelta(minutes=5)
+    ):
         print("Synced in last 5 minutes, skipping")
         return False
 
@@ -308,7 +314,7 @@ def upsert_data(user_id: Optional[str], df: pd.DataFrame) -> bool:
         row_data = upsert_utils.prepare_row_for_upsert(row[1].to_dict())
         rows_to_upsert.append(row_data)
 
-    supabase.table("books").upsert(rows_to_upsert).execute()
+    supabase.table("books").upsert(rows_to_upsert, on_conflict="title, author, user_id").execute()
     supabase.table("syncs").insert({"user_id": user_id}).execute()
     return True
 
@@ -334,9 +340,7 @@ if goodreads_url:
     user_data = load_data_for_user_from_db(user_id)
     df = load_data_for_user(user_data, user_id, goodreads_url)
 elif os.getenv("PYTHON_ENV") == "development" and st.button("Load Sample Data"):
-    user_data_base = pd.read_csv("files/goodreads_export.csv")
-    user_data = user_data_base.to_dict("records")
-    df = load_data_for_user(user_data, user_id, goodreads_url)
+    df = pd.read_csv("files/goodreads_export.csv")
 
 
 if user_id:

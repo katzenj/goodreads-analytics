@@ -1,20 +1,21 @@
 from datetime import datetime, date
+from dateutil.parser import parse
 from typing import Any, Dict, Optional, Union
 
 
-def convert_date_for_upsert(date_obj: Optional[Union[str, datetime]]) -> str:
+def convert_date_for_upsert(date_obj: Optional[Union[str, datetime]]) -> Optional[str]:
     if date_obj is None or date_obj == "":
         return None
 
-    if type(date_obj) == str:
-        return datetime.strptime(date_obj, "%b %d, %Y")
+    if isinstance(date_obj, str):
+        return str(parse(date_obj))
     elif type(date_obj) == date:
         return str(date_obj)
     else:
         return str(date_obj.to_pydatetime())
 
 
-def convert_value_for_upsert(value: Optional[Union[str, int]], value_type) -> int:
+def convert_value_for_upsert(value: Optional[Union[str, int]], value_type) -> Optional[int]:
     if value is None or value == "":
         return None
 
@@ -23,6 +24,9 @@ def convert_value_for_upsert(value: Optional[Union[str, int]], value_type) -> in
 
 def prepare_row_for_upsert(row_data: Dict[str, Any]) -> Dict[str, Any]:
     row_data_copy = row_data.copy()
+
+    if "Unnamed: 0" in row_data_copy:
+        del row_data_copy["Unnamed: 0"]
 
     row_data_copy["date_added"] = convert_date_for_upsert(row_data_copy["date_added"])
     row_data_copy["date_published"] = convert_date_for_upsert(row_data_copy["date_published"])
