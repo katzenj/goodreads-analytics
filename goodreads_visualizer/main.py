@@ -51,7 +51,7 @@ key = os.getenv("SERVICE_KEY")
 supabase: Client = create_client(url, key)
 
 
-@st.cache_data(show_spinner=False)
+@st.cache_data(show_spinner=False, ttl=600)
 def get_all_book_data_cached(base_url: str) -> pd.DataFrame:
     return get_all_book_data(base_url)
 
@@ -143,7 +143,7 @@ def show_data(df: pd.DataFrame) -> None:
 
         with st.expander(f"Show all books read in {year}"):
             div_ele = div(class_name="book-list")
-            for row in df_read_year.iterrows():
+            for row in df_read_year.sort_values(by="date_read").iterrows():
                 row_values = row[1]
                 list_div = div(class_name="book-list-item")
                 list_div.add(img(src=row_values["cover_url"]))
