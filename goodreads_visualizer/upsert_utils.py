@@ -1,6 +1,19 @@
 from datetime import datetime, date
 from dateutil.parser import parse
-from typing import Any, Dict, Optional, Union
+from typing import Any, Dict, List, Optional, Union
+
+
+def unique_books(books: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
+    seen = set()
+    res = []
+    for book in books:
+        tup = (book["title"], book["author"], book["user_id"])
+        if tup in seen:
+            continue
+        else:
+            seen.add(tup)
+            res.append(book)
+    return res
 
 
 def convert_date_for_upsert(date_obj: Optional[Union[str, datetime]]) -> Optional[str]:

@@ -1,13 +1,21 @@
 from typing import Optional, Union
+
 import pandas as pd
-import streamlit as st
+
+from dateutil.parser import parse
 
 
 def format_df_datetimes(df: pd.DataFrame) -> None:
-    df["date_read"] = pd.to_datetime(df["date_read"])
-    df["date_started"] = pd.to_datetime(df["date_started"])
-    df["date_published"] = pd.to_datetime(df["date_published"])
-    df["date_added"] = pd.to_datetime(df["date_added"])
+    df["date_read"] = df["date_read"].apply(lambda x: parse_dt(x))
+    df["date_started"] = df["date_started"].apply(lambda x: parse_dt(x))
+    df["date_published"] = df["date_published"].apply(lambda x: parse_dt(x))
+    df["date_added"] = df["date_added"].apply(lambda x: parse_dt(x))
+
+
+def parse_dt(dt):
+    if pd.isna(dt):
+        return None
+    return parse(dt)
 
 
 def get_books_read_this_year(df: pd.DataFrame) -> pd.DataFrame:
@@ -19,15 +27,12 @@ def get_books_read_this_year(df: pd.DataFrame) -> pd.DataFrame:
 def convert_datetime_to_string(
     val: Optional[Union[pd.Timestamp, str]]
 ) -> Optional[str]:
-    if val is None:
-        return None
-    elif pd.isna(val):
+    if val is None or pd.isna(val):
         return None
     else:
         return val.strftime("%Y-%m-%d")
 
 
-@st.cache_data
 def download_df(df: pd.DataFrame, format: str) -> bytes:
     copy = df.copy()[
         [

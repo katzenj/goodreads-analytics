@@ -7,10 +7,8 @@ import requests
 import streamlit as st
 
 from datetime import datetime, timedelta
-from dateutil.parser import parse
 from dominate.tags import div, img, p
 from dotenv import load_dotenv
-from supabase import create_client, Client
 
 
 if os.getenv("PYTHON_ENV") == "development":
@@ -20,13 +18,13 @@ else:
 
 
 try:
-    from goodreads_visualizer import page_parser, url_utils, df_utils, upsert_utils
+    from goodreads_visualizer import page_parser, url_utils, df_utils, db
     from goodreads_visualizer.sections import BooksReadThisYear, BooksReadComparedToYear
 except ModuleNotFoundError:
     from sections import BooksReadThisYear, BooksReadComparedToYear
+    import db
     import df_utils
     import page_parser
-    import upsert_utils
     import url_utils
 
 ALL_COLUMNS = [
@@ -45,10 +43,6 @@ ALL_COLUMNS = [
     "user_id",
 ]
 
-
-url = os.getenv("SUPABASE_URL")
-key = os.getenv("SERVICE_KEY")
-supabase: Client = create_client(url, key)
 
 
 @st.cache_data(show_spinner=False, ttl=600)
@@ -88,7 +82,29 @@ def get_all_book_data(base_url: str) -> pd.DataFrame:
     return df
 
 
-def show_data(df: pd.DataFrame) -> None:
+def render_download_buttons(df: pd.DataFrame) -> None:
+    copy = df.copy()
+    # --- Download buttons ---
+    st.download_button(
+        "Download as CSV",
+        df_utils.download_df(copy, "csv"),
+        "goodreads_export.csv",
+        "text/csv",
+        key="download-csv",
+    )
+    st.download_button(
+        "Download as JSON",
+        df_utils.download_df(copy, "json"),
+        "goodreads_export.json",
+        "application/json",
+        key="download-json",
+    )
+
+
+def show_data(df: Optional[pd.DataFrame]) -> None:
+    if df is None:
+        return
+
     df_utils.format_df_datetimes(df)
 
     with st.expander("Show data in table"):
@@ -107,21 +123,8 @@ def show_data(df: pd.DataFrame) -> None:
         ].reset_index(drop=True)
         df_reset_index
 
-        # --- Download buttons ---
-        st.download_button(
-            "Download as CSV",
-            df_utils.download_df(df, "csv"),
-            "goodreads_export.csv",
-            "text/csv",
-            key="download-csv",
-        )
-        st.download_button(
-            "Download as JSON",
-            df_utils.download_df(df, "json"),
-            "goodreads_export.json",
-            "application/json",
-            key="download-json",
-        )
+        render_download_buttons(df)
+
 
     current_year = pd.to_datetime("today").year
 
@@ -143,7 +146,11 @@ def show_data(df: pd.DataFrame) -> None:
 
         with st.expander(f"Show all books read in {year}"):
             div_ele = div(class_name="book-list")
-            for row in df_read_year.sort_values(by="date_read").iterrows():
+            iterator = (
+                df_read_year.sort_values(by="date_read", ascending=False)
+                            .iterrows()
+            )
+            for row in iterator:
                 row_values = row[1]
                 list_div = div(class_name="book-list-item")
                 list_div.add(img(src=row_values["cover_url"]))
@@ -245,30 +252,8 @@ def show_data(df: pd.DataFrame) -> None:
         st.altair_chart(bar)
 
 
-def load_data_for_user_from_db(user_id: int) -> List[Dict[str, Any]]:
-    res = supabase.table("books").select("*").eq("user_id", user_id).execute()
-    return res.data
-
-
-def get_last_sync_date(user_id):
-    last_sync = (
-        supabase.table("syncs")
-        .select("*")
-        .eq("user_id", user_id)
-        .order("id", desc=True)
-        .limit(1)
-        .execute()
-        .data
-    )
-
-    if last_sync is None or len(last_sync) == 0:
-        return None
-
-    return parse(last_sync[0]["created_at"]).replace(tzinfo=None)
-
-
 def load_synced_user_data(user_id):
-    last_sync_date = get_last_sync_date(user_id)
+    last_sync_date = db.get_last_sync_date(user_id)
     if last_sync_date is None:
         return False
 
@@ -285,7 +270,7 @@ def load_data_for_user(
         df = pd.DataFrame(user_data)
     else:
         df = get_all_book_data_cached(goodreads_url)
-        upsert_data(user_id, df)
+        db.upsert_data(user_id, df)
 
     df["date_read"] = pd.to_datetime(df["date_read"]).dt.strftime("%b %d, %Y")
     df["date_published"] = pd.to_datetime(df["date_published"]).dt.strftime("%b %d, %Y")
@@ -294,29 +279,30 @@ def load_data_for_user(
     return df
 
 
-def upsert_data(user_id: Optional[int], df: pd.DataFrame) -> bool:
-    last_sync_date = get_last_sync_date(user_id)
-    if (
-        last_sync_date is not None and
-        last_sync_date >= datetime.now() - timedelta(minutes=5)
-    ):
-        print("Synced in last 5 minutes, skipping")
-        return False
+def fetch_data():
+    goodreads_url = st.text_input(
+        "Enter your Goodreads URL",
+        key="goodreads-url",
+        placeholder="https://www.goodreads.com/review/list/142394620",
+    )
 
-    if user_id is None:
-        return False
+    user_id = None
+    df = None
 
-    df_to_save = df.where(pd.notna(df), None)
-    df_to_save.fillna("", inplace=True)  # Fill the rating and other Nans
+    if goodreads_url:
+        user_id = int(url_utils.parse_user_id(goodreads_url))
+        user_data = db.load_user_books(user_id)
+        df = load_data_for_user(user_data, user_id, goodreads_url)
+    elif os.getenv("PYTHON_ENV") == "development" and st.button("Load Sample Data"):
+        df = pd.read_csv("files/goodreads_export.csv")
 
-    rows_to_upsert = []
-    for row in df_to_save.iterrows():
-        row_data = upsert_utils.prepare_row_for_upsert(row[1].to_dict())
-        rows_to_upsert.append(row_data)
 
-    supabase.table("books").upsert(rows_to_upsert, on_conflict="title, author, user_id").execute()
-    supabase.table("syncs").insert({"user_id": user_id}).execute()
-    return True
+    if user_id and st.button("Force sync of Goodreads Data"):
+        df = get_all_book_data(goodreads_url)
+        db.upsert_data(user_id, df)
+
+    return df
+
 
 
 st.set_page_config(page_title="Goodreads Visualizer", layout="wide")
@@ -325,30 +311,7 @@ with open("files/style.css") as f:
     st.markdown(f"<style>{f.read()}</style>", unsafe_allow_html=True)
 
 st.write("# Goodreads Visualizer")
-goodreads_url = st.text_input(
-    "Enter your Goodreads URL",
-    key="goodreads-url",
-    placeholder="https://www.goodreads.com/review/list/142394620",
-)
-
-user_id = None
-df = None
-user_data = []
-
-if goodreads_url:
-    user_id = int(url_utils.parse_user_id(goodreads_url))
-    user_data = load_data_for_user_from_db(user_id)
-    df = load_data_for_user(user_data, user_id, goodreads_url)
-elif os.getenv("PYTHON_ENV") == "development" and st.button("Load Sample Data"):
-    df = pd.read_csv("files/goodreads_export.csv")
 
 
-if user_id:
-    load_sync_data = load_synced_user_data(user_id)
-
-    if not load_sync_data and st.button("Re-sync Goodreads Data"):
-        df = get_all_book_data(goodreads_url)
-        upsert_data(user_id, df)
-
-if df is not None:
-    show_data(df)
+df = fetch_data()
+show_data(df)
