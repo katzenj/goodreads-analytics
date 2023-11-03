@@ -44,7 +44,6 @@ ALL_COLUMNS = [
 ]
 
 
-
 @st.cache_data(show_spinner=False, ttl=600)
 def get_all_book_data_cached(base_url: str) -> pd.DataFrame:
     return get_all_book_data(base_url)
@@ -125,7 +124,6 @@ def show_data(df: Optional[pd.DataFrame]) -> None:
 
         render_download_buttons(df)
 
-
     current_year = pd.to_datetime("today").year
 
     # --- Year in Review ---
@@ -146,10 +144,9 @@ def show_data(df: Optional[pd.DataFrame]) -> None:
 
         with st.expander(f"Show all books read in {year}"):
             div_ele = div(class_name="book-list")
-            iterator = (
-                df_read_year.sort_values(by="date_read", ascending=False)
-                            .iterrows()
-            )
+            iterator = df_read_year.sort_values(
+                by="date_read", ascending=False
+            ).iterrows()
             for row in iterator:
                 row_values = row[1]
                 list_div = div(class_name="book-list-item")
@@ -264,7 +261,6 @@ def load_synced_user_data(user_id):
 def load_data_for_user(
     user_data: List[Dict[str, Any]], user_id: int, goodreads_url: str
 ) -> pd.DataFrame:
-
     df = None
     if len(user_data) > 0 and load_synced_user_data(user_id):
         df = pd.DataFrame(user_data)
@@ -291,18 +287,16 @@ def fetch_data():
 
     if goodreads_url:
         user_id = int(url_utils.parse_user_id(goodreads_url))
-        user_data = db.load_user_books(user_id)
+        user_data = db.get_user_books_data(user_id)
         df = load_data_for_user(user_data, user_id, goodreads_url)
     elif os.getenv("PYTHON_ENV") == "development" and st.button("Load Sample Data"):
         df = pd.read_csv("files/goodreads_export.csv")
-
 
     if user_id and st.button("Force sync of Goodreads Data"):
         df = get_all_book_data(goodreads_url)
         db.upsert_data(user_id, df)
 
     return df
-
 
 
 st.set_page_config(page_title="Goodreads Visualizer", layout="wide")

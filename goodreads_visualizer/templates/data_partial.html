@@ -1,0 +1,41 @@
+<div class="mx-auto max-w-7xl px-6 lg:px-8">
+    <dl class="grid grid-cols-1 gap-x-8 gap-y-16 text-center pb-2 lg:pb-8">
+    <div class="mx-auto flex max-w-xs flex-col gap-y-4">
+        <dt class="text-base leading-7 text-gray-600">Books read</dt>
+        <dd class="text-3xl font-semibold tracking-tight text-gray-900 sm:text-5xl">
+        {{ data.count }}
+        </dd>
+    </div>
+    </dl>
+
+    <dl class="grid grid-cols-1 gap-x-8 gap-y-16 text-center pt-2 lg:grid-cols-2 lg:pt-8">
+    <div class="mx-auto flex max-w-xs flex-col gap-y-4">
+        <dt class="text-base leading-7 text-gray-600">Longest book</dt>
+        <dd class="text-3xl font-semibold tracking-tight text-gray-900 sm:text-5xl">
+        {{ data.max_length }}
+        </dd>
+    </div>
+    <div class="mx-auto flex max-w-xs flex-col gap-y-4">
+        <dt class="text-base leading-7 text-gray-600">
+        Average book length
+        </dt>
+        <dd class="text-3xl font-semibold tracking-tight text-gray-900 sm:text-5xl">
+        {{ data.average_length }}
+        </dd>
+    </div>
+    <div class="mx-auto flex max-w-xs flex-col gap-y-4">
+        <dt class="text-base leading-7 text-gray-600">max rating</dt>
+        <dd class="text-3xl font-semibold tracking-tight text-gray-900 sm:text-5xl">
+        {{ data.max_rating }}
+        </dd>
+    </div>
+    <div class="mx-auto flex max-w-xs flex-col gap-y-4">
+        <dt class="text-base leading-7 text-gray-600">
+        Average book rating
+        </dt>
+        <dd class="text-3xl font-semibold tracking-tight text-gray-900 sm:text-5xl">
+        {{ data.average_rating }}
+        </dd>
+    </div>
+    </dl>
+</div>
