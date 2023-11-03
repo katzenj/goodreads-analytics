@@ -15,7 +15,7 @@ def format_df_datetimes(df: pd.DataFrame) -> None:
 def parse_dt(dt):
     if pd.isna(dt):
         return None
-    return parse(dt)
+    return parse(str(dt))
 
 
 def get_books_read_this_year(df: pd.DataFrame) -> pd.DataFrame:
