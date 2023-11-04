@@ -8,13 +8,6 @@ import streamlit as st
 
 from datetime import datetime, timedelta
 from dominate.tags import div, img, p
-from dotenv import load_dotenv
-
-
-if os.getenv("PYTHON_ENV") == "development":
-    load_dotenv(".env.local")
-else:
-    load_dotenv(".env")
 
 
 try:

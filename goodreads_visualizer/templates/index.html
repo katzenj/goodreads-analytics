@@ -1,46 +1,5 @@
 {% extends 'base.html' %} {% block content %}
 
-<div class="h-screen w-full flex flex-col">
-  <header class="flex h-16 items-center justify-between border-b px-4 md:px-6">
-    <nav class="flex items-center gap-2 text-lg font-semibold md:text-base">
-      <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none"
-        stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="h-6 w-6">
-        <path d="M4 19.5v-15A2.5 2.5 0 0 1 6.5 2H20v20H6.5a2.5 2.5 0 0 1 0-5H20"></path>
-      </svg>
-      <span class="ml-2">Goodreads Visualizer</span>
-    </nav>
-    <div
-      class="flex h-10 w-full items-center justify-between rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50">
-      <select class="w-full" id="year-select">
-        {% for year in years %}
-        <option value="{{ year }}">{{ year }}</option>
-        {% endfor %}
-      </select>
-    </div>
-  </header>
-  <main>
-    <div class="py-12" id="data-container">
-      {% include 'data_partial.html' %}
-    </div>
-  </main>
-</div>
-
-<script>
-  document.addEventListener('DOMContentLoaded', function () {
-    var selectElement = document.getElementById('year-select');
-
-    selectElement.addEventListener('change', function () {
-      var year = this.value;
-      fetch(`/refresh?year=${year}`)
-        .then(response => response.text())
-        .then(html => {
-          document.getElementById('data-container').innerHTML = html;
-        })
-        .catch(error => {
-          console.error('Error fetching data:', error);
-        });
-    });
-  });
-</script>
+{% include 'input_partial.html' %}
 
 {% endblock %}

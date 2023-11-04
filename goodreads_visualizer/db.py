@@ -2,6 +2,7 @@ from typing import Any, Dict, List, Optional, Union
 
 import os
 import pandas as pd
+from dotenv import load_dotenv
 
 from datetime import datetime, timedelta, date
 from dateutil.parser import parse
@@ -11,6 +12,12 @@ try:
     from goodreads_visualizer import upsert_utils
 except ModuleNotFoundError:
     import upsert_utils
+
+
+if os.getenv("PYTHON_ENV") == "development":
+    load_dotenv(".env.local")
+else:
+    load_dotenv(".env")
 
 
 url = os.getenv("SUPABASE_URL")
@@ -35,6 +42,23 @@ def get_user_books_data(
         return res.data
 
     res = supabase.table("books").select("*").eq("user_id", user_id).execute()
+    return res.data
+
+
+def get_user_books_data_for_years(
+    user_id: Union[int, str], years: List[Union[str, int]]
+) -> List[Dict[str, Any]]:
+    year_ints = [int(year) for year in years]
+    start_of_timeframe = date(year=min(year_ints), month=1, day=1)
+    end_of_timeframe = date(year=max(year_ints), month=12, day=31)
+    res = (
+        supabase.table("books")
+        .select("*")
+        .eq("user_id", user_id)
+        .gte("date_read", start_of_timeframe)
+        .lte("date_read", end_of_timeframe)
+        .execute()
+    )
     return res.data
 
 

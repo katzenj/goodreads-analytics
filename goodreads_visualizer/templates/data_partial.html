@@ -1,41 +1,70 @@
-<div class="mx-auto max-w-7xl px-6 lg:px-8">
-    <dl class="grid grid-cols-1 gap-x-8 gap-y-16 text-center pb-2 lg:pb-8">
-    <div class="mx-auto flex max-w-xs flex-col gap-y-4">
-        <dt class="text-base leading-7 text-gray-600">Books read</dt>
-        <dd class="text-3xl font-semibold tracking-tight text-gray-900 sm:text-5xl">
-        {{ data.count }}
-        </dd>
+<div class="mx-auto">
+    <div>
+        <dl
+            class="grid grid-cols-1 lg:grid-cols-5 text-center px-4 lg:py-4 rounded-lg border border-zinc-200 bg-zinc-100/40 dark:border-zinc-800 dark:bg-zinc-800/40 lg:divide-x-2 lg:divide-y-0 divide-y-2">
+            <div class="mx-auto flex w-full flex-col p-8">
+                <dt class="text-base leading-7 text-gray-600">Books read</dt>
+                <dd class="text-3xl font-semibold tracking-tight text-gray-900 sm:text-5xl">
+                    {{ data.count }}
+                </dd>
+            </div>
+            <div class="mx-auto flex w-full flex-col p-8">
+                <dt class="text-base leading-7 text-gray-600">Longest book</dt>
+                <dd class="text-3xl font-semibold tracking-tight text-gray-900 sm:text-5xl">
+                    {{ data.max_length }}
+                </dd>
+            </div>
+            <div class="mx-auto flex w-full flex-col p-8">
+                <dt class="text-base leading-7 text-gray-600">
+                    Average book length
+                </dt>
+                <dd class="text-3xl font-semibold tracking-tight text-gray-900 sm:text-5xl">
+                    {{ data.average_length }}
+                </dd>
+            </div>
+            <div class="mx-auto flex w-full flex-col p-8 ">
+                <dt class="text-base leading-7 text-gray-600">max rating</dt>
+                <dd class="text-3xl font-semibold tracking-tight text-gray-900 sm:text-5xl">
+                    {{ data.max_rating }}
+                </dd>
+            </div>
+            <div class="mx-auto flex w-full flex-col p-8 ">
+                <dt class="text-base leading-7 text-gray-600">
+                    Average book rating
+                </dt>
+                <dd class="text-3xl font-semibold tracking-tight text-gray-900 sm:text-5xl">
+                    {{ data.average_rating }}
+                </dd>
+            </div>
+        </dl>
     </div>
-    </dl>
-
-    <dl class="grid grid-cols-1 gap-x-8 gap-y-16 text-center pt-2 lg:grid-cols-2 lg:pt-8">
-    <div class="mx-auto flex max-w-xs flex-col gap-y-4">
-        <dt class="text-base leading-7 text-gray-600">Longest book</dt>
-        <dd class="text-3xl font-semibold tracking-tight text-gray-900 sm:text-5xl">
-        {{ data.max_length }}
-        </dd>
+    <hr />
+    <div class="my-8">
+        <h1 class="text-2xl font-semibold">Graph Data</h1>
+        <canvas id="books-per-month"></canvas>
+        <canvas id="books-compared-to-year"></canvas>
     </div>
-    <div class="mx-auto flex max-w-xs flex-col gap-y-4">
-        <dt class="text-base leading-7 text-gray-600">
-        Average book length
-        </dt>
-        <dd class="text-3xl font-semibold tracking-tight text-gray-900 sm:text-5xl">
-        {{ data.average_length }}
-        </dd>
-    </div>
-    <div class="mx-auto flex max-w-xs flex-col gap-y-4">
-        <dt class="text-base leading-7 text-gray-600">max rating</dt>
-        <dd class="text-3xl font-semibold tracking-tight text-gray-900 sm:text-5xl">
-        {{ data.max_rating }}
-        </dd>
-    </div>
-    <div class="mx-auto flex max-w-xs flex-col gap-y-4">
-        <dt class="text-base leading-7 text-gray-600">
-        Average book rating
-        </dt>
-        <dd class="text-3xl font-semibold tracking-tight text-gray-900 sm:text-5xl">
-        {{ data.average_rating }}
-        </dd>
-    </div>
-    </dl>
 </div>
+<script>
+    const renderChart = (elementId, graph_data) => {
+        const ctx = document.getElementById(elementId);
+
+        const myChart = new Chart(ctx, {
+            type: graph_data["type"],
+            data: {
+                labels: graph_data["labels"],
+                datasets: graph_data["datasets"]
+            },
+            options: {
+                scales: {
+                    y: {
+                        beginAtZero: true
+                    }
+                }
+            }
+        });
+    }
+
+    renderChart('books-per-month', {{ graphs_data.books_read_this_year.serialize() | safe }})
+    renderChart('books-compared-to-year', {{ graphs_data.books_read_compared_to_year.serialize() | safe }})
+</script>
