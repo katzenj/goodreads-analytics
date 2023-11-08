@@ -5,17 +5,14 @@ import calendar
 import numpy as np
 import pandas as pd
 
-# import requests
-
 
 try:
-    from goodreads_visualizer import page_parser, url_utils, df_utils, db, api, models
+    from goodreads_visualizer import api, db, models, goodreads_api
 except ModuleNotFoundError:
     import api
     import db
-
-    # import page_parser
-    # import url_utils
+    import goodreads_api
+    import models
 
 YearType = Optional[Union[str, int]]
 
@@ -44,12 +41,44 @@ def get_user_data(user_id: Union[str, int], year: YearType) -> models.BookData:
     )
 
 
-def generate_distribution(data, nbins=15):
+def graphs_data_for_year(user_id: Union[str, int], year: YearType) -> models.GraphsData:
+    year = year if year else pd.to_datetime("today").year
+
+    user_data = api.get_user_books_data(user_id, year)
+    user_data_df = pd.DataFrame(user_data)
+
+    books_read_by_month = _books_read_by_month_graph_data(user_data_df)
+    books_read_compared_to_year = _books_compared_to_year_graph_data(
+        user_id, int(year), int(year) - 1
+    )
+    book_length_distribution_data = _book_length_distribution(user_data)
+    book_rating_distribution_data = _book_rating_distribution(user_data)
+    book_publish_year_distribution_data = _book_publish_year_distribution(user_data)
+
+    return models.GraphsData(
+        books_read_this_year=books_read_by_month,
+        books_read_compared_to_year=books_read_compared_to_year,
+        book_length_distribution=book_length_distribution_data,
+        book_rating_distribution=book_rating_distribution_data,
+        book_publish_year_distribution=book_publish_year_distribution_data,
+    )
+
+
+def sync_user_data(user_id: Union[str, int]) -> None:
+    goodreads_api.fetch_books_data(user_id)
+    pass
+
+
+# PRIVATE FUNCTIONS
+
+
+def _generate_distribution(data, nbins=15):
     # Find the min and max values for the data
     min_val, max_val = min(data), max(data)
 
     # Calculate the bin width using the range of data and the desired number of bins
-    # The bin width should be a whole number, so we round up to ensure that all data fits into the bins
+    # The bin width should be a whole number, so we round up to ensure that all data
+    # fits into the bins
     range_val = max_val - min_val
     bin_width = max(int(np.ceil(range_val / nbins)), 1)  # Bin width at least 1
 
@@ -71,7 +100,7 @@ def generate_distribution(data, nbins=15):
     return distribution
 
 
-def books_read_by_month_data(df: pd.DataFrame) -> pd.DataFrame:
+def _books_read_by_month_data(df: pd.DataFrame) -> pd.DataFrame:
     # Group by month and count the number of books
     books_per_month = df.groupby(df["date_read"].dt.month).size().reset_index()
     books_per_month = (
@@ -88,8 +117,8 @@ def books_read_by_month_data(df: pd.DataFrame) -> pd.DataFrame:
     return books_per_month
 
 
-def books_read_by_month_graph_data(user_data_df: pd.DataFrame) -> models.GraphData:
-    df = books_read_by_month_data(user_data_df)
+def _books_read_by_month_graph_data(user_data_df: pd.DataFrame) -> models.GraphData:
+    df = _books_read_by_month_data(user_data_df)
     return models.GraphData(
         type="bar",
         labels=df["Month"].tolist(),
@@ -106,7 +135,7 @@ def books_read_by_month_graph_data(user_data_df: pd.DataFrame) -> models.GraphDa
     )
 
 
-def books_read_by_month_and_year(df: pd.DataFrame) -> pd.DataFrame:
+def _books_read_by_month_and_year(df: pd.DataFrame) -> pd.DataFrame:
     copy = df.copy()
     copy["month"] = copy["date_read"].apply(lambda x: calendar.month_abbr[x.month])
     copy["year"] = copy["date_read"].apply(lambda x: x.year)
@@ -115,7 +144,7 @@ def books_read_by_month_and_year(df: pd.DataFrame) -> pd.DataFrame:
     return copy
 
 
-def books_read_compared_to_year_data(
+def _books_read_compared_to_year_data(
     user_id: Union[str, int], year: YearType, year_to_compare: YearType
 ) -> pd.DataFrame:
     years_ints = [int(year), int(year_to_compare)]
@@ -127,20 +156,20 @@ def books_read_compared_to_year_data(
         pd.date_range(start=start_of_time_frame, end=end_of_time_frame, freq="MS"),
         columns=["date_read"],
     )
-    all_months = books_read_by_month_and_year(all_months)
+    all_months = _books_read_by_month_and_year(all_months)
     all_months["count"] = 0
 
-    books_read_last_two_years_counts = books_read_by_month_and_year(user_data)
+    books_read_last_two_years_counts = _books_read_by_month_and_year(user_data)
 
     both_dfs = pd.concat([all_months, books_read_last_two_years_counts])
 
     return both_dfs.groupby(["month", "year"])["count"].sum().reset_index()
 
 
-def books_compared_to_year_graph_data(
+def _books_compared_to_year_graph_data(
     user_id: Union[str, int], year: YearType, year_to_compare: YearType
 ) -> models.GraphData:
-    df = books_read_compared_to_year_data(user_id, year, year_to_compare)
+    df = _books_read_compared_to_year_data(user_id, year, year_to_compare)
 
     return models.GraphData(
         type="line",
@@ -164,8 +193,8 @@ def books_compared_to_year_graph_data(
     )
 
 
-def book_length_distribution(user_data_df: pd.DataFrame) -> models.GraphData:
-    distribution = generate_distribution(user_data_df["num_pages"].tolist())
+def _book_length_distribution(user_data_df: pd.DataFrame) -> models.GraphData:
+    distribution = _generate_distribution(user_data_df["num_pages"].tolist())
     labels = [f"{x[0]}-{x[1]}" for x in distribution]
 
     return models.GraphData(
@@ -185,7 +214,7 @@ def book_length_distribution(user_data_df: pd.DataFrame) -> models.GraphData:
     )
 
 
-def book_rating_distribution(user_data_df: pd.DataFrame) -> models.GraphData:
+def _book_rating_distribution(user_data_df: pd.DataFrame) -> models.GraphData:
     rating_df = (
         user_data_df["rating"]
         .value_counts()
@@ -210,13 +239,13 @@ def book_rating_distribution(user_data_df: pd.DataFrame) -> models.GraphData:
     )
 
 
-def book_publish_year_distribution(user_data_df: pd.DataFrame) -> models.GraphData:
+def _book_publish_year_distribution(user_data_df: pd.DataFrame) -> models.GraphData:
     df_pub_dist = user_data_df[pd.notna(user_data_df["date_published"])][
         "date_published"
     ].reset_index()
     pub_date_list = [x.year for x in df_pub_dist["date_published"].tolist()]
 
-    distribution = generate_distribution(pub_date_list)
+    distribution = _generate_distribution(pub_date_list)
     labels = [f"{x[0]}-{x[1]}" for x in distribution]
 
     return models.GraphData(
@@ -233,27 +262,4 @@ def book_publish_year_distribution(user_data_df: pd.DataFrame) -> models.GraphDa
             )
         ],
         tooltip={"title": "Publication year", "label": "Number of books"},
-    )
-
-
-def graphs_data_for_year(user_id: Union[str, int], year: YearType) -> models.GraphsData:
-    year = year if year else pd.to_datetime("today").year
-
-    user_data = api.get_user_books_data(user_id, year)
-    user_data_df = pd.DataFrame(user_data)
-
-    books_read_by_month = books_read_by_month_graph_data(user_data_df)
-    books_read_compared_to_year = books_compared_to_year_graph_data(
-        user_id, int(year), int(year) - 1
-    )
-    book_length_distribution_data = book_length_distribution(user_data)
-    book_rating_distribution_data = book_rating_distribution(user_data)
-    book_publish_year_distribution_data = book_publish_year_distribution(user_data)
-
-    return models.GraphsData(
-        books_read_this_year=books_read_by_month,
-        books_read_compared_to_year=books_read_compared_to_year,
-        book_length_distribution=book_length_distribution_data,
-        book_rating_distribution=book_rating_distribution_data,
-        book_publish_year_distribution=book_publish_year_distribution_data,
     )

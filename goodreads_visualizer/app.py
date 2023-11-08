@@ -38,6 +38,15 @@ def index():
     return render_template("index.html", years=years, data=data)
 
 
+@app.route("/sync", methods=["POST"])
+def sync():
+    user_id = request.form["user_id"]
+
+    orchestrator.sync_user_data(user_id)
+
+    return redirect(url_for("reading_data", user_id=user_id))
+
+
 @app.route("/users/<user_id>", methods=["GET", "POST"])
 def reading_data(user_id):
     selected_year = get_year_param(request.args)
