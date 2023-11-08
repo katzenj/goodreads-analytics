@@ -1,16 +1,16 @@
 <div class="mx-auto">
     <div>
         <dl
-            class="grid grid-cols-1 lg:grid-cols-5 text-center px-4 lg:py-4 rounded-lg border border-zinc-200 bg-zinc-100/40 dark:border-zinc-800 dark:bg-zinc-800/40 lg:divide-x-2 lg:divide-y-0 divide-y-2">
+            class="grid grid-cols-1 lg:grid-cols-5 text-center px-4 xl:py-4 rounded-lg border border-zinc-200 bg-zinc-100/40 lg:divide-x-2 lg:divide-y-0 divide-y-2">
             <div class="mx-auto flex w-full flex-col p-8">
                 <dt class="text-base leading-7 text-gray-600">Books read</dt>
-                <dd class="text-3xl font-semibold tracking-tight text-gray-900 sm:text-5xl">
+                <dd class="font-semibold tracking-tight text-gray-900 text-3xl">
                     {{ data.count }}
                 </dd>
             </div>
             <div class="mx-auto flex w-full flex-col p-8">
                 <dt class="text-base leading-7 text-gray-600">Longest book</dt>
-                <dd class="text-3xl font-semibold tracking-tight text-gray-900 sm:text-5xl">
+                <dd class="font-semibold tracking-tight text-gray-900 text-3xl">
                     {{ data.max_length }}
                 </dd>
             </div>
@@ -18,13 +18,13 @@
                 <dt class="text-base leading-7 text-gray-600">
                     Average book length
                 </dt>
-                <dd class="text-3xl font-semibold tracking-tight text-gray-900 sm:text-5xl">
+                <dd class="font-semibold tracking-tight text-gray-900 text-3xl">
                     {{ data.average_length }}
                 </dd>
             </div>
             <div class="mx-auto flex w-full flex-col p-8 ">
                 <dt class="text-base leading-7 text-gray-600">max rating</dt>
-                <dd class="text-3xl font-semibold tracking-tight text-gray-900 sm:text-5xl">
+                <dd class="font-semibold tracking-tight text-gray-900 text-3xl">
                     {{ data.max_rating }}
                 </dd>
             </div>
@@ -32,7 +32,7 @@
                 <dt class="text-base leading-7 text-gray-600">
                     Average book rating
                 </dt>
-                <dd class="text-3xl font-semibold tracking-tight text-gray-900 sm:text-5xl">
+                <dd class="font-semibold tracking-tight text-gray-900 text-3xl">
                     {{ data.average_rating }}
                 </dd>
             </div>
@@ -40,15 +40,17 @@
     </div>
     <hr />
     <div class="my-16">
-        <div class="grid grid-cols-2 gap-16">
+        <div class="grid grid-cols-1 xl:grid-cols-2 gap-8 xl:gap-16">
             <div>
                 <h3 class="text-2xl font-semibold pb-4">Books read per month</h3>
                 <canvas class="graph" id="books-per-month"></canvas>
             </div>
-            <div>
-                <h3 class="text-2xl font-semibold pb-4">Books read compared to previous year</h3>
-                <canvas class="" id="books-compared-to-year"></canvas>
-            </div>
+            {% if graphs_data["books_read_compared_to_year"] != "null" %}
+                <div>
+                    <h3 class="text-2xl font-semibold pb-4">Books read compared to previous year</h3>
+                    <canvas class="" id="books-compared-to-year"></canvas>
+                </div>
+            {% endif %}
             <div>
                 <h3 class="text-2xl font-semibold pb-4">Book length distribution</h3>
                 <canvas class="" id="books-length-dist"></canvas>
@@ -85,7 +87,9 @@
 
     const renderChart = (elementId, graph_data) => {
         const ctx = document.getElementById(elementId);
-        console.log(graph_data["tooltip"])
+        if (!graph_data) {
+            return
+        }
 
         const myChart = new Chart(ctx, {
             type: graph_data["type"],
@@ -119,9 +123,11 @@
         });
     }
 
-    renderChart('books-per-month', {{ graphs_data.books_read_this_year.serialize() | safe }})
-    renderChart('books-compared-to-year', {{ graphs_data.books_read_compared_to_year.serialize() | safe }})
-    renderChart('books-length-dist', {{ graphs_data.book_length_distribution.serialize() | safe }})
-    renderChart('books-rating-dist', {{ graphs_data.book_rating_distribution.serialize() | safe }})
-    renderChart('books-publish-year-dist', {{ graphs_data.book_publish_year_distribution.serialize() | safe }})
+    renderChart('books-per-month', {{ graphs_data["books_read"] | safe }})
+    if ({{graphs_data["books_read_compared_to_year"] | safe }} !== "null") {
+        renderChart('books-compared-to-year', {{ graphs_data["books_read_compared_to_year"] | safe }})
+    }
+    renderChart('books-length-dist', {{ graphs_data["book_length_distribution"] | safe }})
+    renderChart('books-rating-dist', {{ graphs_data["book_rating_distribution"] | safe }})
+    renderChart('books-publish-year-dist', {{ graphs_data["book_publish_year_distribution"] | safe }})
 </script>

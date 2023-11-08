@@ -1,9 +1,8 @@
-from typing import Union, Optional
+from typing import Dict, List, Tuple, Union, Optional
 
 
 import calendar
 import numpy as np
-import pandas as pd
 
 
 try:
@@ -17,46 +16,53 @@ except ModuleNotFoundError:
 YearType = Optional[Union[str, int]]
 
 
-def get_user_data(user_id: Union[str, int], year: YearType) -> models.BookData:
-    user_df = api.get_user_books_data(user_id, year)
+def get_user_data(user_id: Union[str, int], selected_year: YearType) -> models.BookData:
+    if selected_year == "All time":
+        year = None
+    else:
+        year = selected_year
 
-    years = sorted(
-        list(
-            set(user_df[pd.notna(user_df["date_read"])]["date_read"].dt.strftime("%Y"))
-        )
-        + ["All time"],
-        reverse=True,
-    )
+    read_books = api.get_read_books_for_user(user_id, year)
+    ratings = [book.rating for book in read_books if book.rating is not None]
+    num_pages = [book.num_pages for book in read_books if book.num_pages is not None]
     years = sorted(db.get_user_years(user_id) + ["All time"], reverse=True)
 
     return (
         models.BookData(
-            count=user_df.shape[0],
-            max_rating=round(user_df["rating"].max()),
-            average_rating=round(user_df["rating"].mean(), 1),
-            average_length=round(user_df["num_pages"].mean(), 2),
-            max_length=round(user_df["num_pages"].max()),
+            count=len(read_books),
+            max_rating=round(max(ratings)),
+            average_rating=round(np.mean(ratings), 1),
+            average_length=round(np.mean(num_pages), 2),
+            max_length=round(max(num_pages)),
         ),
         years,
     )
 
 
-def graphs_data_for_year(user_id: Union[str, int], year: YearType) -> models.GraphsData:
-    year = year if year else pd.to_datetime("today").year
+def graphs_data_for_year(
+    user_id: Union[str, int], selected_year: YearType
+) -> models.GraphsData:
+    if selected_year == "All time":
+        year = None
+    else:
+        year = selected_year
 
-    user_data = api.get_user_books_data(user_id, year)
-    user_data_df = pd.DataFrame(user_data)
+    read_books = api.get_read_books_for_user(user_id, year)
 
-    books_read_by_month = _books_read_by_month_graph_data(user_data_df)
-    books_read_compared_to_year = _books_compared_to_year_graph_data(
-        user_id, int(year), int(year) - 1
-    )
-    book_length_distribution_data = _book_length_distribution(user_data)
-    book_rating_distribution_data = _book_rating_distribution(user_data)
-    book_publish_year_distribution_data = _book_publish_year_distribution(user_data)
+    books_read_by_month = _books_read_by_month_graph_data(read_books)
+
+    books_read_compared_to_year = None
+    if year is not None:
+        books_read_compared_to_year = _books_compared_to_year_graph_data(
+            user_id, int(year), int(year) - 1
+        )
+
+    book_length_distribution_data = _book_length_distribution(read_books)
+    book_rating_distribution_data = _book_rating_distribution(read_books)
+    book_publish_year_distribution_data = _book_publish_year_distribution(read_books)
 
     return models.GraphsData(
-        books_read_this_year=books_read_by_month,
+        books_read=books_read_by_month,
         books_read_compared_to_year=books_read_compared_to_year,
         book_length_distribution=book_length_distribution_data,
         book_rating_distribution=book_rating_distribution_data,
@@ -65,8 +71,9 @@ def graphs_data_for_year(user_id: Union[str, int], year: YearType) -> models.Gra
 
 
 def sync_user_data(user_id: Union[str, int]) -> None:
-    goodreads_api.fetch_books_data(user_id)
-    pass
+    books_data = goodreads_api.fetch_books_data(user_id)
+    res = api.upsert_data(user_id, books_data)
+    print(res)
 
 
 # PRIVATE FUNCTIONS
@@ -100,34 +107,21 @@ def _generate_distribution(data, nbins=15):
     return distribution
 
 
-def _books_read_by_month_data(df: pd.DataFrame) -> pd.DataFrame:
-    # Group by month and count the number of books
-    books_per_month = df.groupby(df["date_read"].dt.month).size().reset_index()
-    books_per_month = (
-        books_per_month.set_index("date_read")
-        .reindex(range(1, 13), fill_value=0)
-        .reset_index()
-    )
-    books_per_month.columns = ["date_read", "num_books"]
-    books_per_month["date_read"] = books_per_month["date_read"].apply(
-        lambda x: calendar.month_abbr[x]
-    )
+def _books_read_by_month_graph_data(books: List[models.Book]) -> models.GraphData:
+    counts = [0] * 12
+    for book in books:
+        idx = book.date_read.month - 1
+        counts[idx] += 1
 
-    books_per_month.columns = ["Month", "Number of Books"]
-    return books_per_month
-
-
-def _books_read_by_month_graph_data(user_data_df: pd.DataFrame) -> models.GraphData:
-    df = _books_read_by_month_data(user_data_df)
     return models.GraphData(
         type="bar",
-        labels=df["Month"].tolist(),
+        labels=calendar.month_abbr[1:],
         x_axis_label="Month",
         y_axis_label="Books read",
         datasets=[
             models.Dataset(
                 label="Books read",
-                data=df["Number of Books"].tolist(),
+                data=counts,
                 background_color="#068D9D",
                 border_width=1,
             )
@@ -135,56 +129,48 @@ def _books_read_by_month_graph_data(user_data_df: pd.DataFrame) -> models.GraphD
     )
 
 
-def _books_read_by_month_and_year(df: pd.DataFrame) -> pd.DataFrame:
-    copy = df.copy()
-    copy["month"] = copy["date_read"].apply(lambda x: calendar.month_abbr[x.month])
-    copy["year"] = copy["date_read"].apply(lambda x: x.year)
-
-    copy = copy.groupby(["month", "year"]).size().reset_index(name="count")
-    return copy
-
-
 def _books_read_compared_to_year_data(
     user_id: Union[str, int], year: YearType, year_to_compare: YearType
-) -> pd.DataFrame:
+) -> Dict[Tuple[str, int], int]:
     years_ints = [int(year), int(year_to_compare)]
     user_data = api.get_user_books_data_for_years(user_id, years_ints)
+    month_year_counts = {
+        (calendar.month_abbr[month], year): 0
+        for month in range(1, 13)
+        for year in years_ints
+    }
 
-    start_of_time_frame = pd.to_datetime(f"{year_to_compare}-01-01")
-    end_of_time_frame = pd.to_datetime(f"{year}-12-31")
-    all_months = pd.DataFrame(
-        pd.date_range(start=start_of_time_frame, end=end_of_time_frame, freq="MS"),
-        columns=["date_read"],
-    )
-    all_months = _books_read_by_month_and_year(all_months)
-    all_months["count"] = 0
+    for data in user_data:
+        month_year_counts[
+            (calendar.month_abbr[data.date_read.month], data.date_read.year)
+        ] += 1
 
-    books_read_last_two_years_counts = _books_read_by_month_and_year(user_data)
-
-    both_dfs = pd.concat([all_months, books_read_last_two_years_counts])
-
-    return both_dfs.groupby(["month", "year"])["count"].sum().reset_index()
+    return month_year_counts
 
 
 def _books_compared_to_year_graph_data(
     user_id: Union[str, int], year: YearType, year_to_compare: YearType
 ) -> models.GraphData:
-    df = _books_read_compared_to_year_data(user_id, year, year_to_compare)
+    data = _books_read_compared_to_year_data(user_id, year, year_to_compare)
 
+    year_one_data = [data[(month, year)] for month in calendar.month_abbr[1:]]
+    year_two_data = [
+        data[(month, year_to_compare)] for month in calendar.month_abbr[1:]
+    ]
     return models.GraphData(
         type="line",
-        labels=list(set(df["month"].tolist())),
+        labels=calendar.month_abbr[1:],
         datasets=[
             models.Dataset(
                 label=f"Books read {year}",
-                data=df[df["year"] == int(year)]["count"].tolist(),
+                data=year_one_data,
                 background_color="#93D5BD",
                 border_width=3,
                 border_color="#93D5BD",
             ),
             models.Dataset(
                 label=f"Books read {year_to_compare}",
-                data=df[df["year"] == int(year_to_compare)]["count"].tolist(),
+                data=year_two_data,
                 background_color="#43A5C9",
                 border_width=3,
                 border_color="#43A5C9",
@@ -193,8 +179,8 @@ def _books_compared_to_year_graph_data(
     )
 
 
-def _book_length_distribution(user_data_df: pd.DataFrame) -> models.GraphData:
-    distribution = _generate_distribution(user_data_df["num_pages"].tolist())
+def _book_length_distribution(read_books: List[models.Book]) -> models.GraphData:
+    distribution = _generate_distribution([book.num_pages for book in read_books])
     labels = [f"{x[0]}-{x[1]}" for x in distribution]
 
     return models.GraphData(
@@ -214,23 +200,23 @@ def _book_length_distribution(user_data_df: pd.DataFrame) -> models.GraphData:
     )
 
 
-def _book_rating_distribution(user_data_df: pd.DataFrame) -> models.GraphData:
-    rating_df = (
-        user_data_df["rating"]
-        .value_counts()
-        .reindex(range(1, 6), fill_value=0)
-        .reset_index()
-    )
+def _book_rating_distribution(read_books: List[models.Book]) -> models.GraphData:
+    rating_counts = [0] * 5
+    for book in read_books:
+        if book.rating is None:
+            continue
+
+        rating_counts[book.rating - 1] += 1
 
     return models.GraphData(
         type="bar",
-        labels=rating_df["rating"].tolist(),
+        labels=list(range(1, 6)),
         x_axis_label="Book rating",
         y_axis_label="Number of books",
         datasets=[
             models.Dataset(
                 label="Number of books",
-                data=rating_df["count"].tolist(),
+                data=rating_counts,
                 background_color="#6D9DC5",
                 border_width=1,
             )
@@ -239,13 +225,13 @@ def _book_rating_distribution(user_data_df: pd.DataFrame) -> models.GraphData:
     )
 
 
-def _book_publish_year_distribution(user_data_df: pd.DataFrame) -> models.GraphData:
-    df_pub_dist = user_data_df[pd.notna(user_data_df["date_published"])][
-        "date_published"
-    ].reset_index()
-    pub_date_list = [x.year for x in df_pub_dist["date_published"].tolist()]
-
-    distribution = _generate_distribution(pub_date_list)
+def _book_publish_year_distribution(read_books: List[models.Book]) -> models.GraphData:
+    published_years = [
+        book.date_published.year
+        for book in read_books
+        if book.date_published is not None
+    ]
+    distribution = _generate_distribution(published_years)
     labels = [f"{x[0]}-{x[1]}" for x in distribution]
 
     return models.GraphData(

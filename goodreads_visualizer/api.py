@@ -1,27 +1,91 @@
-import pandas as pd
+from datetime import date, datetime
+from typing import List, Optional, Union
+
+
+from dateutil.parser import parse
 
 try:
-    from goodreads_visualizer import df_utils, db
+    from goodreads_visualizer import db, models
 except ModuleNotFoundError:
     import db
-    import df_utils
+    import models
 
 
-def get_user_books_data(user_id, year):
+def get_read_books_for_user(
+    user_id: Union[str, int], year: Optional[Union[str, int]]
+) -> List[models.Book]:
     if year is None:
         user_data = db.get_user_books_data(user_id)
     else:
         user_data = db.get_user_books_data(user_id, year)
 
-    user_df = pd.DataFrame(user_data)
-    df_utils.format_df_datetimes(user_df)
+    data_models = []
+    for data in user_data:
+        if data["date_read"] is None:
+            continue
 
-    return user_df
+        data_models.append(
+            models.Book(
+                title=data["title"],
+                author=data["author"],
+                date_read=_parse_optional_date(data["date_read"]),
+                date_added=_parse_optional_date(data["date_added"]),
+                rating=data["rating"],
+                num_pages=data["num_pages"],
+                avg_rating=data["avg_rating"],
+                read_count=data["read_count"],
+                date_published=_parse_optional_date(data["date_published"]),
+                date_started=_parse_optional_date(data["date_started"]),
+                review=data["review"],
+                user_id=data["user_id"],
+                id=data["id"],
+                isbn=data["isbn"],
+                cover_url=data["cover_url"],
+            )
+        )
+
+    return data_models
 
 
-def get_user_books_data_for_years(user_id, years):
+def get_user_books_data_for_years(
+    user_id: Union[str, int], years: List[Union[str, int]]
+) -> List[models.Book]:
     user_data = db.get_user_books_data_for_years(user_id, years)
-    user_df = pd.DataFrame(user_data)
-    df_utils.format_df_datetimes(user_df)
 
-    return user_df
+    data_models = []
+    for data in user_data:
+        data_models.append(
+            models.Book(
+                title=data["title"],
+                author=data["author"],
+                date_read=_parse_optional_date(data["date_read"]),
+                date_added=_parse_optional_date(data["date_added"]),
+                rating=data["rating"],
+                num_pages=data["num_pages"],
+                avg_rating=data["avg_rating"],
+                read_count=data["read_count"],
+                date_published=_parse_optional_date(data["date_published"]),
+                date_started=_parse_optional_date(data["date_started"]),
+                review=data["review"],
+                user_id=data["user_id"],
+                id=data["id"],
+                isbn=data["isbn"],
+                cover_url=data["cover_url"],
+            )
+        )
+    return data_models
+
+
+def get_last_sync_date(user_id: Union[str, int]) -> Optional[datetime]:
+    return db.get_last_sync_date(user_id)
+
+
+def upsert_data(user_id: Optional[int], books: List[models.Book]) -> bool:
+    return db.upsert_data(user_id, books)
+
+
+def _parse_optional_date(optional_date: Optional[str]) -> Optional[date]:
+    if optional_date is None:
+        return None
+    else:
+        return parse(optional_date)

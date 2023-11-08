@@ -1,15 +1,15 @@
-import pandas as pd
+from typing import List
 import requests
 
-
 try:
-    from goodreads_visualizer import page_parser, url_utils
+    from goodreads_visualizer import page_parser, url_utils, models
 except ModuleNotFoundError:
+    import models
     import page_parser
     import url_utils
 
 
-def fetch_books_data(user_id: str) -> pd.DataFrame:
+def fetch_books_data(user_id: str) -> List[models.Book]:
     request_url = url_utils.format_user_url(user_id)
     response = requests.get(request_url)
 
@@ -26,6 +26,26 @@ def fetch_books_data(user_id: str) -> pd.DataFrame:
         parser = page_parser.PageParser(response.text)
         all_data.extend(parser.parse_page())
 
-    df = pd.DataFrame(all_data)
-    df["user_id"] = user_id
-    return df
+    books = []
+    for data in all_data:
+        books.append(
+            models.Book(
+                title=data["title"],
+                author=data["author"],
+                date_read=data["date_read"],
+                date_added=data["date_added"],
+                rating=data["rating"],
+                num_pages=data["num_pages"],
+                avg_rating=data["avg_rating"],
+                read_count=data["read_count"],
+                date_published=data["date_published"],
+                date_started=data["date_started"],
+                review=data["review"],
+                user_id=user_id,
+                id=None,
+                isbn=data["isbn"],
+                cover_url=data["cover_url"],
+            )
+        )
+
+    return books

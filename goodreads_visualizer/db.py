@@ -1,16 +1,23 @@
 from typing import Any, Dict, List, Optional, Union
 
 import os
-import pandas as pd
 
 from datetime import datetime, timedelta, date
 from dateutil.parser import parse
+from dotenv import load_dotenv
 from supabase import create_client, Client
 
+
+if os.getenv("PYTHON_ENV") == "development":
+    load_dotenv(".env.local")
+else:
+    load_dotenv(".env")
+
+
 try:
-    from goodreads_visualizer import upsert_utils
+    from goodreads_visualizer import models
 except ModuleNotFoundError:
-    import upsert_utils
+    import models
 
 
 url = os.getenv("SUPABASE_URL")
@@ -83,7 +90,7 @@ def get_last_sync_date(user_id):
     return parse(last_sync[0]["created_at"]).replace(tzinfo=None)
 
 
-def upsert_data(user_id: Optional[int], df: pd.DataFrame) -> bool:
+def upsert_data(user_id: Optional[int], books: List[models.Book]) -> bool:
     last_sync_date = get_last_sync_date(user_id)
     if last_sync_date is not None and last_sync_date >= datetime.now() - timedelta(
         minutes=5
@@ -94,18 +101,24 @@ def upsert_data(user_id: Optional[int], df: pd.DataFrame) -> bool:
     if user_id is None:
         return False
 
-    df_to_save = df.where(pd.notna(df), None)
-    df_to_save.fillna("", inplace=True)  # Fill the rating and other Nans
-
-    rows_to_upsert = []
-    for row in df_to_save.iterrows():
-        row_data = upsert_utils.prepare_row_for_upsert(row[1].to_dict())
-        rows_to_upsert.append(row_data)
-
-    unique_books = upsert_utils.unique_books(rows_to_upsert)
+    unique_books = _unique_books(books)
+    serialized_books = [book.serialize() for book in unique_books]
 
     supabase.table("books").upsert(
-        unique_books, on_conflict="title, author, user_id"
+        serialized_books, on_conflict="title, author, user_id"
     ).execute()
     supabase.table("syncs").insert({"user_id": user_id}).execute()
     return True
+
+
+def _unique_books(books: List[models.Book]) -> List[models.Book]:
+    seen = set()
+    res = []
+    for book in books:
+        tup = (book.title, book.author, book.user_id)
+        if tup in seen:
+            continue
+        else:
+            seen.add(tup)
+            res.append(book)
+    return res

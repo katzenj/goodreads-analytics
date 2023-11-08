@@ -1,33 +1,36 @@
 {% extends 'base.html' %} {% block content %}
 
 <div class="h-screen w-full flex flex-col">
-    <div>
-        <form id="re-sync" action="{{ url_for('sync') }}" method="post">
-            <input type="hidden" name="user_id" value="{{ user_id }}">
-            <button type="submit"
-                class="text-sm font-medium focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-rose-600 disabled:pointer-events-none border-2 border-grey-300 hover:border-rose-600 h-10 bg-white text-black w-auto px-4 py-2 rounded-md">
-                Re-sync Goodreads data
-            </button>
-        </form>
+    <div class="flex flex-col lg:flex-row justify-between">
+        <div>
+            <form action="{{ url_for('reading_data', user_id=user_id) }}" method="POST" class="flex flex-col lg:flex-row">
+                <label class="text-lg lg:m-auto pr-4" for="year-select">Year</label>
+                <select name="year" onchange="this.form.submit()"
+                    class="w-52 h-10 rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2"
+                    id="year-select">
+                    {% for year in years %}
+                    <option value="{{ year }}" {% if year==selected_year %}selected="true" {% endif %}>{{ year }}
+                    </option>
+                    {% endfor %}
+                </select>
+                <input type="hidden" name="user_id" value="{{ user_id }}">
+            </form>
+        </div>
+        <div class="pt-6 lg:p-0">
+            <form id="re-sync" action="{{ url_for('sync') }}" method="post" class="flex flex-col lg:flex-row">
+                <input type="hidden" name="user_id" value="{{ user_id }}">
+                {% if last_synced_at %}<span class="lg:m-auto pr-2">Last synced at: <date>{{ last_synced_at }}</date></span>{% endif %}
+                <button type="submit"
+                    class="text-sm font-medium focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-rose-600 disabled:pointer-events-none border-2 border-grey-300 hover:border-rose-600 h-10 bg-white text-black w-auto px-4 py-2 rounded-md">
+                    Re-sync
+                </button>
+            </form>
+        </div>
     </div>
-    <div class="my-8">
+    <div class="py-8">
         <hr />
     </div>
-    <div class="flex flex-row">
-        <form action="{{ url_for('reading_data', user_id=user_id) }}" method="POST" class="flex flex-row">
-            <label class="text-lg m-auto pr-4" for="year-select">Year</label>
-            <select name="year" onchange="this.form.submit()"
-                class="w-full h-10 rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2"
-                id="year-select">
-                {% for year in years %}
-                <option value="{{ year }}" {% if year==selected_year %}selected="true" {% endif %}>{{ year }}</option>
-                {% endfor %}
-            </select>
-            <input type="hidden" name="user_id" value="{{ user_id }}">
-        </form>
-
-    </div>
-    <div class="py-12" id="data-container">
+    <div id="data-container">
         <h2 class="text-3xl font-semibold my-4">
             {% if selected_year %} {{ selected_year }} in Review {% else %} All Time Reading Data {% endif %}
         </h2>
