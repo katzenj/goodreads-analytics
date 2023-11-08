@@ -1,4 +1,5 @@
 from typing import List
+from bs4 import BeautifulSoup
 import requests
 
 try:
@@ -10,7 +11,8 @@ except ModuleNotFoundError:
 
 
 def fetch_books_data(user_id: str) -> List[models.Book]:
-    request_url = url_utils.format_user_url(user_id)
+    base_url = url_utils.format_user_url(user_id)
+    request_url = url_utils.format_goodreads_url(base_url)
     response = requests.get(request_url)
 
     parser = page_parser.PageParser(response.text)
@@ -49,3 +51,11 @@ def fetch_books_data(user_id: str) -> List[models.Book]:
         )
 
     return books
+
+
+def fetch_user_name(user_id: str):
+    request_url = url_utils.get_user_profile_url(user_id)
+    response = requests.get(request_url)
+    soup = BeautifulSoup(response.text, "html.parser")
+    header = soup.find(id="profileNameTopHeading")
+    return header.get_text().strip()

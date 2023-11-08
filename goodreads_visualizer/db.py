@@ -2,17 +2,16 @@ from typing import Any, Dict, List, Optional, Union
 
 import os
 
-from datetime import datetime, timedelta, date
+from datetime import date
 from dateutil.parser import parse
 from dotenv import load_dotenv
-import pytz
 from supabase import create_client, Client
 
 
 if os.getenv("PYTHON_ENV") == "development":
     load_dotenv(".env.local")
 else:
-    load_dotenv(".env")
+    load_dotenv(".env.production")
 
 
 try:
@@ -91,7 +90,15 @@ def get_last_sync_date(user_id):
     return parse(last_sync[0]["created_at"])
 
 
-def upsert_data(user_id: Optional[int], books: List[models.Book]) -> bool:
+def get_user_name(user_id: Union[str, int]) -> Optional[str]:
+    res = supabase.table("users").select("name").eq("external_id", user_id).execute()
+    if len(res.data) == 0:
+        return None
+
+    return res.data[0]["name"]
+
+
+def upsert_books_data(user_id: Optional[int], books: List[models.Book]) -> bool:
     if user_id is None:
         return False
 
@@ -102,6 +109,15 @@ def upsert_data(user_id: Optional[int], books: List[models.Book]) -> bool:
         serialized_books, on_conflict="title, author, user_id"
     ).execute()
     supabase.table("syncs").insert({"user_id": user_id}).execute()
+    return True
+
+
+def upsert_user_name(user_id: Union[str, int], name: str) -> bool:
+    res = (
+        supabase.table("users")
+        .upsert({"external_id": user_id, "name": name}, on_conflict="external_id")
+        .execute()
+    )
     return True
 
 

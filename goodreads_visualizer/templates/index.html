@@ -1,6 +1,6 @@
 {% extends 'base.html' %} {% block content %}
 
-<div>
+<div id="form-container">
     <form id="goodreads-form" method="POST">
         <div class="mb-6">
             <div class="pb-2">
@@ -22,7 +22,10 @@
         </div>
     </form>
 </div>
-<script>
+<div id="loading-spinner-index" class="hidden">
+    {% include 'components/spinner.html' %}
+</div>
+<script type="text/javascript">
     document.getElementById('goodreads-form').onsubmit = function (event) {
         event.preventDefault();
         const urlInput = document.getElementById('goodreads-url').value;
@@ -32,10 +35,12 @@
         }
     };
 
-    document.getElementById('goodreads-url').addEventListener('keypress', function() {
+    document.getElementById('goodreads-url').addEventListener('keypress', function () {
         if (event.keyCode == 13) {
             event.preventDefault();
             this.form.submit()
+            document.getElementById('loading-spinner-index').classList.remove('hidden');
+            document.getElementById('form-container').classList.add('hidden');
         }
     })
 </script>

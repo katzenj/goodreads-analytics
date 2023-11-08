@@ -80,8 +80,16 @@ def get_last_sync_date(user_id: Union[str, int]) -> Optional[datetime]:
     return db.get_last_sync_date(user_id)
 
 
-def upsert_data(user_id: Optional[int], books: List[models.Book]) -> bool:
-    return db.upsert_data(user_id, books)
+def get_user_name(user_id: Union[str, int]) -> str:
+    return db.get_user_name(user_id)
+
+
+def upsert_books_data(user_id: Optional[int], books: List[models.Book]) -> bool:
+    return db.upsert_books_data(user_id, books)
+
+
+def upsert_user_name(user_id: Union[str, int], name: str) -> bool:
+    return db.upsert_user_name(user_id, name)
 
 
 def _parse_optional_date(optional_date: Optional[str]) -> Optional[date]:

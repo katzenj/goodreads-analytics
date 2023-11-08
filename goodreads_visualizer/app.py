@@ -31,7 +31,7 @@ def sync():
     user_id = request.form["user_id"]
 
     orchestrator.sync_user_data(user_id)
-
+    orchestrator.sync_user_name(user_id)
     return redirect(url_for("reading_data", user_id=user_id))
 
 
@@ -45,7 +45,7 @@ def load_data_for_url():
 @app.route("/users/<user_id>", methods=["GET", "POST"])
 def reading_data(user_id):
     selected_year = request.args.get("year")
-    data, years = orchestrator.get_user_data(user_id, selected_year)
+    data, years, user_name = orchestrator.get_user_data(user_id, selected_year)
     graphs_data = orchestrator.graphs_data_for_year(user_id, selected_year)
 
     if request.method == "POST":
@@ -66,4 +66,5 @@ def reading_data(user_id):
         user_id=user_id,
         last_synced_at=formatted_last_synced_at,
         goodreads_url=goodreads_url,
+        user_name=user_name,
     )

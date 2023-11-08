@@ -25,9 +25,11 @@ def get_user_data(user_id: Union[str, int], selected_year: YearType) -> models.B
     last_sync_date = api.get_last_sync_date(user_id)
     read_books = []
     if last_sync_date is None:
-        _res = sync_user_data(user_id)
+        sync_user_name(user_id)
+        sync_user_data(user_id)
 
     read_books = api.get_read_books_for_user(user_id, year)
+    user_name = api.get_user_name(user_id)
 
     ratings = [book.rating for book in read_books if book.rating is not None]
     num_pages = [book.num_pages for book in read_books if book.num_pages is not None]
@@ -42,6 +44,7 @@ def get_user_data(user_id: Union[str, int], selected_year: YearType) -> models.B
             max_length=round(max(num_pages)),
         ),
         years,
+        user_name,
     )
 
 
@@ -76,16 +79,23 @@ def graphs_data_for_year(
     )
 
 
-def sync_user_data(user_id: Union[str, int]) -> None:
+def sync_user_data(user_id: Union[str, int]) -> bool:
     books_data = goodreads_api.fetch_books_data(user_id)
-    res = api.upsert_data(user_id, books_data)
-    return res
+    return api.upsert_books_data(user_id, books_data)
+
+
+def sync_user_name(user_id: Union[str, int]) -> bool:
+    user_name = goodreads_api.fetch_user_name(user_id)
+    return api.upsert_user_name(user_id, user_name)
 
 
 # PRIVATE FUNCTIONS
 
 
 def _generate_distribution(data, nbins=15):
+    if len(data) == 0:
+        return []
+
     # Find the min and max values for the data
     min_val, max_val = min(data), max(data)
 

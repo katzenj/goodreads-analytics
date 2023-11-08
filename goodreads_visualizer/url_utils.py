@@ -32,3 +32,7 @@ def parse_user_id(url: str) -> str:
 
 def format_user_url(user_id: str) -> str:
     return f"https://www.goodreads.com/review/list/{user_id}"
+
+
+def get_user_profile_url(user_id: str) -> str:
+    return f"https://www.goodreads.com/user/show/{user_id}"

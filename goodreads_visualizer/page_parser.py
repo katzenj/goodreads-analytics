@@ -29,9 +29,9 @@ class PageParser:
                 "previous_page"
             ]:
                 continue
-            page_numbers.append(page.get_text())
+            page_numbers.append(int(page.get_text()))
 
-        return int(page_numbers[-1])
+        return max(page_numbers)
 
     def _parse_date(self, row: Any, class_key: str) -> str:
         date_text_from_row = (
