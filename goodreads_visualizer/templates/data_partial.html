@@ -1,0 +1,133 @@
+<div class="mx-auto">
+    <div>
+        <dl
+            class="grid grid-cols-1 lg:grid-cols-5 text-center px-4 xl:py-4 rounded-lg border border-zinc-200 bg-zinc-100/40 lg:divide-x-2 lg:divide-y-0 divide-y-2">
+            <div class="mx-auto flex w-full flex-col p-8">
+                <dt class="text-base leading-7 text-gray-600">Books read</dt>
+                <dd class="font-semibold tracking-tight text-gray-900 text-3xl">
+                    {{ data.count }}
+                </dd>
+            </div>
+            <div class="mx-auto flex w-full flex-col p-8">
+                <dt class="text-base leading-7 text-gray-600">Longest book</dt>
+                <dd class="font-semibold tracking-tight text-gray-900 text-3xl">
+                    {{ data.max_length }}
+                </dd>
+            </div>
+            <div class="mx-auto flex w-full flex-col p-8">
+                <dt class="text-base leading-7 text-gray-600">
+                    Average book length
+                </dt>
+                <dd class="font-semibold tracking-tight text-gray-900 text-3xl">
+                    {{ data.average_length }}
+                </dd>
+            </div>
+            <div class="mx-auto flex w-full flex-col p-8 ">
+                <dt class="text-base leading-7 text-gray-600">max rating</dt>
+                <dd class="font-semibold tracking-tight text-gray-900 text-3xl">
+                    {{ data.max_rating }}
+                </dd>
+            </div>
+            <div class="mx-auto flex w-full flex-col p-8 ">
+                <dt class="text-base leading-7 text-gray-600">
+                    Average book rating
+                </dt>
+                <dd class="font-semibold tracking-tight text-gray-900 text-3xl">
+                    {{ data.average_rating }}
+                </dd>
+            </div>
+        </dl>
+    </div>
+    <hr />
+    <div class="my-16">
+        <div class="grid grid-cols-1 xl:grid-cols-2 gap-8 xl:gap-16">
+            <div>
+                <h3 class="text-2xl font-semibold pb-4">Books read per month</h3>
+                <canvas class="graph" id="books-per-month"></canvas>
+            </div>
+            {% if graphs_data["books_read_compared_to_year"] != "null" %}
+                <div>
+                    <h3 class="text-2xl font-semibold pb-4">Books read compared to previous year</h3>
+                    <canvas class="" id="books-compared-to-year"></canvas>
+                </div>
+            {% endif %}
+            <div>
+                <h3 class="text-2xl font-semibold pb-4">Book length distribution</h3>
+                <canvas class="" id="books-length-dist"></canvas>
+            </div>
+            <div>
+                <h3 class="text-2xl font-semibold pb-4">Rating distribution</h3>
+                <canvas class="" id="books-rating-dist"></canvas>
+            </div>
+            <div>
+                <h3 class="text-2xl font-semibold pb-4">Book publish year distribution</h3>
+                <canvas class="" id="books-publish-year-dist"></canvas>
+            </div>
+        </div>
+    </div>
+</div>
+<script>
+    const renderTooltip = (graph_data) => {
+        if (graph_data["tooltip"] === "") {
+            return {}
+        }
+
+        return {
+            callbacks: {
+                title: function (tooltipItems) {
+                    // Assuming the label for each bin is passed from Python in the format "start - end"
+                    return `${graph_data["tooltip"]["title"]}: ${tooltipItems[0].label}`;
+                },
+                label: function (tooltipItem) {
+                    return `${graph_data["tooltip"]["label"]}: ${tooltipItem.raw}`;
+                }
+            }
+        }
+    }
+
+    const renderChart = (elementId, graph_data) => {
+        const ctx = document.getElementById(elementId);
+        if (!graph_data) {
+            return
+        }
+
+        const myChart = new Chart(ctx, {
+            type: graph_data["type"],
+            data: {
+                labels: graph_data["labels"],
+                datasets: graph_data["datasets"]
+            },
+            options: {
+                scales: {
+                    x: {
+                        title: {
+                            display: true,
+                            text: graph_data["x_axis_label"],
+                        }
+                    },
+                    y: {
+                        title: {
+                            display: true,
+                            text: graph_data["y_axis_label"],
+                        },
+                        beginAtZero: true
+                    }
+                },
+                plugins: {
+                    legend: {
+                        display: false
+                    },
+                    tooltip: renderTooltip(graph_data)
+                }
+            }
+        });
+    }
+
+    renderChart('books-per-month', {{ graphs_data["books_read"] | safe }})
+    if ({{graphs_data["books_read_compared_to_year"] | safe }} !== "null") {
+        renderChart('books-compared-to-year', {{ graphs_data["books_read_compared_to_year"] | safe }})
+    }
+    renderChart('books-length-dist', {{ graphs_data["book_length_distribution"] | safe }})
+    renderChart('books-rating-dist', {{ graphs_data["book_rating_distribution"] | safe }})
+    renderChart('books-publish-year-dist', {{ graphs_data["book_publish_year_distribution"] | safe }})
+</script>
