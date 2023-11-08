@@ -8,7 +8,7 @@ except ModuleNotFoundError:
 
 
 def get_user_books_data(user_id, year):
-    if year == "All time":
+    if year is None:
         user_data = db.get_user_books_data(user_id)
     else:
         user_data = db.get_user_books_data(user_id, year)

@@ -2,37 +2,25 @@
 
 <div class="h-screen w-full flex flex-col">
     <div class="flex flex-row">
-        <label class="text-lg m-auto pr-4" for="year-select">Year</label>
-        <select
-            class="w-full h-10 rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2"
-            id="year-select">
-            {% for year in years %}
-            <option value="{{ year }}">{{ year }}</option>
-            {% endfor %}
-        </select>
+        <form action="{{ url_for('reading_data', user_id=user_id) }}" method="POST" class="flex flex-row">
+            <label class="text-lg m-auto pr-4" for="year-select">Year</label>
+            <select name="year" onchange="this.form.submit()"
+                class="w-full h-10 rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2"
+                id="year-select">
+                {% for year in years %}
+                <option value="{{ year }}" {% if year == selected_year %}selected="true"{% endif %}>{{ year }}</option>
+                {% endfor %}
+            </select>
+            <input type="hidden" name="user_id" value="{{ user_id }}">
+        </form>
+
     </div>
     <div class="py-12" id="data-container">
-        <h2 class="text-2xl font-semibold my-4">Year in Review</h2>
+        <h2 class="text-3xl font-semibold my-4">
+            {% if selected_year %} {{ selected_year }} in Review {% else %} All Time Reading Data {% endif %}
+        </h2>
         {% include 'data_partial.html' %}
     </div>
 </div>
-
-<script>
-    document.addEventListener('DOMContentLoaded', function () {
-        var selectElement = document.getElementById('year-select');
-
-        selectElement.addEventListener('change', function () {
-            var year = this.value;
-            fetch(`/refresh?year=${year}`)
-                .then(response => response.text())
-                .then(html => {
-                    document.getElementById('data-container').innerHTML = html;
-                })
-                .catch(error => {
-                    console.error('Error fetching data:', error);
-                });
-        });
-    });
-</script>
 
 {% endblock %}

@@ -2,7 +2,6 @@ from typing import Any, Dict, List, Optional, Union
 
 import os
 import pandas as pd
-from dotenv import load_dotenv
 
 from datetime import datetime, timedelta, date
 from dateutil.parser import parse
@@ -12,12 +11,6 @@ try:
     from goodreads_visualizer import upsert_utils
 except ModuleNotFoundError:
     import upsert_utils
-
-
-if os.getenv("PYTHON_ENV") == "development":
-    load_dotenv(".env.local")
-else:
-    load_dotenv(".env")
 
 
 url = os.getenv("SUPABASE_URL")
