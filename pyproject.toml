@@ -15,10 +15,12 @@ python-dotenv = "^1.0.0"
 Flask = "^3.0.0"
 gunicorn = "^21.2.0"
 requests = "^2.31.0"
+pytz = "^2023.3.post1"
 
 [tool.poetry.dev-dependencies]
 ipython = "^8.14.0"
 ipykernel = "^6.24.0"
+ruff = "^0.1.4"
 
 
 [build-system]

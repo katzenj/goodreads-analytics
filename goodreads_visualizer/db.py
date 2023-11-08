@@ -5,6 +5,7 @@ import os
 from datetime import datetime, timedelta, date
 from dateutil.parser import parse
 from dotenv import load_dotenv
+import pytz
 from supabase import create_client, Client
 
 
@@ -87,17 +88,10 @@ def get_last_sync_date(user_id):
     if last_sync is None or len(last_sync) == 0:
         return None
 
-    return parse(last_sync[0]["created_at"]).replace(tzinfo=None)
+    return parse(last_sync[0]["created_at"])
 
 
 def upsert_data(user_id: Optional[int], books: List[models.Book]) -> bool:
-    last_sync_date = get_last_sync_date(user_id)
-    if last_sync_date is not None and last_sync_date >= datetime.now() - timedelta(
-        minutes=5
-    ):
-        print("Synced in last 5 minutes, skipping")
-        return False
-
     if user_id is None:
         return False
 

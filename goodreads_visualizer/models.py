@@ -71,18 +71,26 @@ class GraphsData:
     def serialize(self):
         return {
             "books_read": self.books_read.serialize(),
-            "books_read_compared_to_year": self.books_read_compared_to_year.serialize()
-            if self.books_read_compared_to_year
-            else "null",
-            "book_length_distribution": self.book_length_distribution.serialize()
-            if self.book_length_distribution
-            else "null",
-            "book_rating_distribution": self.book_rating_distribution.serialize()
-            if self.book_rating_distribution
-            else "null",
-            "book_publish_year_distribution": self.book_publish_year_distribution.serialize()
-            if self.book_publish_year_distribution
-            else "null",
+            "books_read_compared_to_year": (
+                self.books_read_compared_to_year.serialize()
+                if self.books_read_compared_to_year
+                else "null"
+            ),
+            "book_length_distribution": (
+                self.book_length_distribution.serialize()
+                if self.book_length_distribution
+                else "null"
+            ),
+            "book_rating_distribution": (
+                self.book_rating_distribution.serialize()
+                if self.book_rating_distribution
+                else "null"
+            ),
+            "book_publish_year_distribution": (
+                self.book_publish_year_distribution.serialize()
+                if self.book_publish_year_distribution
+                else "null"
+            ),
         }
 
 
@@ -114,12 +122,12 @@ class Book:
             "num_pages": self.num_pages,
             "avg_rating": self.avg_rating,
             "read_count": self.read_count,
-            "date_published": self.date_published.isoformat()
-            if self.date_published
-            else None,
-            "date_started": self.date_started.isoformat()
-            if self.date_started
-            else None,
+            "date_published": (
+                self.date_published.isoformat() if self.date_published else None
+            ),
+            "date_started": (
+                self.date_started.isoformat() if self.date_started else None
+            ),
             "cover_url": self.cover_url,
             "user_id": self.user_id,
             "isbn": self.isbn,

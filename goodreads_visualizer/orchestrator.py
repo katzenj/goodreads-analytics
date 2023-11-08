@@ -22,7 +22,13 @@ def get_user_data(user_id: Union[str, int], selected_year: YearType) -> models.B
     else:
         year = selected_year
 
+    last_sync_date = api.get_last_sync_date(user_id)
+    read_books = []
+    if last_sync_date is None:
+        _res = sync_user_data(user_id)
+
     read_books = api.get_read_books_for_user(user_id, year)
+
     ratings = [book.rating for book in read_books if book.rating is not None]
     num_pages = [book.num_pages for book in read_books if book.num_pages is not None]
     years = sorted(db.get_user_years(user_id) + ["All time"], reverse=True)
@@ -73,7 +79,7 @@ def graphs_data_for_year(
 def sync_user_data(user_id: Union[str, int]) -> None:
     books_data = goodreads_api.fetch_books_data(user_id)
     res = api.upsert_data(user_id, books_data)
-    print(res)
+    return res
 
 
 # PRIVATE FUNCTIONS
@@ -180,7 +186,9 @@ def _books_compared_to_year_graph_data(
 
 
 def _book_length_distribution(read_books: List[models.Book]) -> models.GraphData:
-    distribution = _generate_distribution([book.num_pages for book in read_books])
+    distribution = _generate_distribution(
+        [book.num_pages for book in read_books if book.num_pages is not None]
+    )
     labels = [f"{x[0]}-{x[1]}" for x in distribution]
 
     return models.GraphData(

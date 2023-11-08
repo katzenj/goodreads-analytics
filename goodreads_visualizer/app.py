@@ -1,7 +1,7 @@
 from flask import Flask, render_template, request, redirect, url_for
 
 
-from goodreads_visualizer import api, orchestrator
+from goodreads_visualizer import api, orchestrator, url_utils, utils
 
 
 app = Flask(__name__)
@@ -16,13 +16,14 @@ def get_year_param(args):
     return year
 
 
-@app.route("/")
+@app.route("/", methods=["GET", "POST"])
 def index():
-    user_id = "142394620"
+    if request.method == "POST":
+        url = request.form["goodreads_url"]
+        user_id = url_utils.parse_user_id(url)
+        return redirect(url_for("reading_data", user_id=user_id))
 
-    data, years = orchestrator.get_user_data(user_id, None)
-
-    return render_template("index.html", years=years, data=data)
+    return render_template("index.html")
 
 
 @app.route("/sync", methods=["POST"])
@@ -31,6 +32,13 @@ def sync():
 
     orchestrator.sync_user_data(user_id)
 
+    return redirect(url_for("reading_data", user_id=user_id))
+
+
+@app.route("/load_data", methods=["POST"])
+def load_data_for_url():
+    url = request.form["goodreads_url"]
+    user_id = url_utils.parse_user_id(url)
     return redirect(url_for("reading_data", user_id=user_id))
 
 
@@ -45,8 +53,9 @@ def reading_data(user_id):
         # Redirect to the same page with the year as a query parameter
         return redirect(url_for("reading_data", user_id=user_id, year=year))
 
+    goodreads_url = url_utils.format_user_url(user_id)
     last_synced_at = api.get_last_sync_date(user_id)
-    formatted_last_synced_at = last_synced_at.strftime("%b %d, %Y @ %I:%M %p")
+    formatted_last_synced_at = utils.format_datetime_in_pt(last_synced_at)
 
     return render_template(
         "users/index.html",
@@ -56,4 +65,5 @@ def reading_data(user_id):
         selected_year=selected_year,
         user_id=user_id,
         last_synced_at=formatted_last_synced_at,
+        goodreads_url=goodreads_url,
     )

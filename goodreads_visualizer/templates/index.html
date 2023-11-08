@@ -1,5 +1,43 @@
 {% extends 'base.html' %} {% block content %}
 
-{% include 'input_partial.html' %}
+<div>
+    <form id="goodreads-form" method="POST">
+        <div class="mb-6">
+            <div class="pb-2">
+                <label class="hidden md:text-right" for="goodreads-url">
+                    Enter your Goodreads URL
+                </label>
+            </div>
+            <div>
+                <input
+                    class="bg-gray-200 appearance-none border-2 border-gray-200 rounded-md w-full py-2 px-4 text-gray-700 leading-tight focus:outline-none focus:bg-white focus:border-teal-500"
+                    id="goodreads-url" type="url" name="goodreads_url" placeholder="Enter your Goodreads URL" required>
+            </div>
+        </div>
+        <div>
+            <button type="submit"
+                class="text-sm font-medium focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-teal-600 disabled:pointer-events-none hover:bg-teal-800 h-10 bg-teal-500 text-white w-auto px-4 py-2 rounded-md">
+                Submit
+            </button>
+        </div>
+    </form>
+</div>
+<script>
+    document.getElementById('goodreads-form').onsubmit = function (event) {
+        event.preventDefault();
+        const urlInput = document.getElementById('goodreads-url').value;
+        const userIdMatch = urlInput.match(/(\d{9})(?:-\w+)?/);
+        if (!userIdMatch) {
+            alert('Please enter a valid Goodreads URL.');
+        }
+    };
+
+    document.getElementById('goodreads-url').addEventListener('keypress', function() {
+        if (event.keyCode == 13) {
+            event.preventDefault();
+            this.form.submit()
+        }
+    })
+</script>
 
 {% endblock %}
