@@ -8,17 +8,13 @@ packages = [{include = "goodreads_visualizer"}]
 
 [tool.poetry.dependencies]
 python = "^3.10"
-pandas = "^2.0.3"
 numpy = "^1.25.0"
-altair = "^5.0.1"
-streamlit = "^1.24.0"
-# plotly = "^5.15.0"
-# seaborn = "^0.12.2"
 beautifulsoup4 = "^4.12.2"
 supabase = "^1.0.4"
 python-dotenv = "^1.0.0"
-dominate = "^2.8.0"
 Flask = "^3.0.0"
+gunicorn = "^21.2.0"
+requests = "^2.31.0"
 
 [tool.poetry.dev-dependencies]
 ipython = "^8.14.0"

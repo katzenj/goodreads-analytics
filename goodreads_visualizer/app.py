@@ -1,13 +1,7 @@
 from flask import Flask, render_template, request, redirect, url_for
 
 
-from goodreads_visualizer import api
-
-
-try:
-    from goodreads_visualizer import orchestrator
-except ModuleNotFoundError:
-    pass
+from goodreads_visualizer import api, orchestrator
 
 
 app = Flask(__name__)
