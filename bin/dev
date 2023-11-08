@@ -1,4 +1,0 @@
-#!/bin/bash
-
-docker build -f Dockerfile.dev -t goodreads-visualizer .
-docker run -p 5000:5000 -v $(pwd):/app goodreads-visualizer
