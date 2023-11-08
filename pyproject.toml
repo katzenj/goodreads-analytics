@@ -18,6 +18,7 @@ beautifulsoup4 = "^4.12.2"
 supabase = "^1.0.4"
 python-dotenv = "^1.0.0"
 dominate = "^2.8.0"
+Flask = "^3.0.0"
 
 [tool.poetry.dev-dependencies]
 ipython = "^8.14.0"
