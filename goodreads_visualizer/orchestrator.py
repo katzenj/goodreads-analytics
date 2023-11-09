@@ -96,6 +96,9 @@ def _generate_distribution(data, nbins=15):
     if len(data) == 0:
         return []
 
+    if len(data) == 1:
+        return [(data[0], data[0], 1)]
+
     # Find the min and max values for the data
     min_val, max_val = min(data), max(data)
 
