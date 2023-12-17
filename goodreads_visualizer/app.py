@@ -1,4 +1,5 @@
 from flask import Flask, render_template, request, redirect, url_for
+from datetime import datetime
 
 
 from goodreads_visualizer import api, orchestrator, url_utils, utils
@@ -45,8 +46,15 @@ def load_data_for_url():
 @app.route("/users/<user_id>", methods=["GET", "POST"])
 def reading_data(user_id):
     selected_year = request.args.get("year")
-    data, years, user_name = orchestrator.get_user_data(user_id, selected_year)
+    if selected_year is None:
+        # Default to "current" year
+        selected_year = str(datetime.now().year)
+
+    data = orchestrator.get_user_books_data(user_id, selected_year)
     graphs_data = orchestrator.graphs_data_for_year(user_id, selected_year)
+
+    user_name = orchestrator.get_user_name(user_id)
+    years = orchestrator.get_user_years(user_id)
 
     if request.method == "POST":
         year = request.form["year"]

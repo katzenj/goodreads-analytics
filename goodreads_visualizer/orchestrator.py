@@ -1,3 +1,4 @@
+from datetime import datetime
 from typing import Dict, List, Tuple, Union, Optional
 
 
@@ -16,7 +17,9 @@ except ModuleNotFoundError:
 YearType = Optional[Union[str, int]]
 
 
-def get_user_data(user_id: Union[str, int], selected_year: YearType) -> models.BookData:
+def get_user_books_data(
+    user_id: Union[str, int], selected_year: YearType
+) -> models.BookData:
     if selected_year == "All time":
         year = None
     else:
@@ -29,23 +32,27 @@ def get_user_data(user_id: Union[str, int], selected_year: YearType) -> models.B
         sync_user_data(user_id)
 
     read_books = api.get_read_books_for_user(user_id, year)
-    user_name = api.get_user_name(user_id)
 
     ratings = [book.rating for book in read_books if book.rating is not None]
     num_pages = [book.num_pages for book in read_books if book.num_pages is not None]
-    years = sorted(db.get_user_years(user_id) + ["All time"], reverse=True)
 
-    return (
-        models.BookData(
-            count=len(read_books),
-            max_rating=round(max(ratings)),
-            average_rating=round(np.mean(ratings), 1),
-            average_length=round(np.mean(num_pages), 2),
-            max_length=round(max(num_pages)),
-        ),
-        years,
-        user_name,
+    return models.BookData(
+        count=len(read_books),
+        max_rating=_optional_rounded_max(ratings),
+        average_rating=round(np.mean(ratings), 1),
+        average_length=round(np.mean(num_pages), 2),
+        max_length=_optional_rounded_max(num_pages),
+        list=sorted(read_books, key=lambda x: x.date_read, reverse=True),
     )
+
+
+def get_user_name(user_id: Union[str, int]) -> str:
+    return api.get_user_name(user_id)
+
+
+def get_user_years(user_id: Union[str, int]) -> List[str]:
+    extra_years = ["All time", str(datetime.now().year)]
+    return sorted(set(db.get_user_years(user_id) + extra_years), reverse=True)
 
 
 def graphs_data_for_year(
@@ -80,6 +87,7 @@ def graphs_data_for_year(
 
 
 def sync_user_data(user_id: Union[str, int]) -> bool:
+    # api.delete_cached_dashboard(user_id)
     books_data = goodreads_api.fetch_books_data(user_id)
     return api.upsert_books_data(user_id, books_data)
 
@@ -89,7 +97,38 @@ def sync_user_name(user_id: Union[str, int]) -> bool:
     return api.upsert_user_name(user_id, user_name)
 
 
+def fetch_cached_dashboard(
+    user_id: Union[str, int], year: Optional[Union[str, int]]
+) -> Optional[models.Dashboard]:
+    res_dict = api.fetch_cached_dashboard(user_id, year)
+
+    graphs_dict = res_dict["graphs"]
+    metrics_dict = res_dict["metrics"]
+
+    return models.Dashboard(
+        metrics=models.BookData.from_dict(metrics_dict),
+        graphs=models.GraphsData.from_dict(graphs_dict),
+    )
+
+
+def upsert_dashboard(
+    user_id: Union[str, int],
+    year: Optional[Union[str, int]],
+    metrics: models.BookData,
+    graphs: models.GraphsData,
+) -> bool:
+    dashboard = models.Dashboard(metrics=metrics, graphs=graphs)
+    return api.upsert_dashboard(user_id, year, dashboard)
+
+
 # PRIVATE FUNCTIONS
+
+
+def _optional_rounded_max(data: List[Optional[int]]) -> Optional[int]:
+    if len(data) == 0:
+        return None
+
+    return round(max(data))
 
 
 def _generate_distribution(data, nbins=15):
@@ -120,7 +159,8 @@ def _generate_distribution(data, nbins=15):
 
     # Create a list of tuples (bin_start, bin_end, count) to represent the distribution
     distribution = [
-        (int(bin_edges[i]), int(bin_edges[i + 1]), hist[i]) for i in range(len(hist))
+        (int(bin_edges[i]), int(bin_edges[i + 1]), int(hist[i]))
+        for i in range(len(hist))
     ]
 
     return distribution

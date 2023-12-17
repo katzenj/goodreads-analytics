@@ -1,20 +1,20 @@
 <div class="mx-auto">
     <div>
         <dl
-            class="grid grid-cols-1 lg:grid-cols-5 text-center px-4 xl:py-4 rounded-lg border border-zinc-200 bg-zinc-100/40 lg:divide-x-2 lg:divide-y-0 divide-y-2">
-            <div class="mx-auto flex w-full flex-col p-8">
+            class="grid grid-cols-1 lg:grid-cols-5 text-center xl:py-4 rounded-lg border border-zinc-200 bg-zinc-100/40 lg:divide-x-2 lg:divide-y-0 divide-y-2">
+            <div class="mx-auto flex w-full flex-col p-8 justify-between">
                 <dt class="text-base leading-7 text-gray-600">Books read</dt>
                 <dd class="font-semibold tracking-tight text-gray-900 text-3xl">
                     {{ data.count }}
                 </dd>
             </div>
-            <div class="mx-auto flex w-full flex-col p-8">
+            <div class="mx-auto flex w-full flex-col p-8 justify-between">
                 <dt class="text-base leading-7 text-gray-600">Longest book</dt>
                 <dd class="font-semibold tracking-tight text-gray-900 text-3xl">
                     {{ data.max_length }}
                 </dd>
             </div>
-            <div class="mx-auto flex w-full flex-col p-8">
+            <div class="mx-auto flex w-full flex-col p-8 justify-between">
                 <dt class="text-base leading-7 text-gray-600">
                     Average book length
                 </dt>
@@ -22,13 +22,13 @@
                     {{ data.average_length }}
                 </dd>
             </div>
-            <div class="mx-auto flex w-full flex-col p-8 ">
-                <dt class="text-base leading-7 text-gray-600">max rating</dt>
+            <div class="mx-auto flex w-full flex-col p-8  justify-between">
+                <dt class="text-base leading-7 text-gray-600">Max rating</dt>
                 <dd class="font-semibold tracking-tight text-gray-900 text-3xl">
                     {{ data.max_rating }}
                 </dd>
             </div>
-            <div class="mx-auto flex w-full flex-col p-8 ">
+            <div class="mx-auto flex w-full flex-col p-8  justify-between">
                 <dt class="text-base leading-7 text-gray-600">
                     Average book rating
                 </dt>
@@ -40,16 +40,16 @@
     </div>
     <hr />
     <div class="my-16">
-        <div class="grid grid-cols-1 xl:grid-cols-2 gap-8 xl:gap-16">
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-8 lg:gap-16">
             <div>
                 <h3 class="text-2xl font-semibold pb-4">Books read per month</h3>
                 <canvas class="graph" id="books-per-month"></canvas>
             </div>
             {% if graphs_data["books_read_compared_to_year"] != "null" %}
-                <div>
-                    <h3 class="text-2xl font-semibold pb-4">Books read compared to previous year</h3>
-                    <canvas class="" id="books-compared-to-year"></canvas>
-                </div>
+            <div>
+                <h3 class="text-2xl font-semibold pb-4">Books read compared to previous year</h3>
+                <canvas class="" id="books-compared-to-year"></canvas>
+            </div>
             {% endif %}
             <div>
                 <h3 class="text-2xl font-semibold pb-4">Book length distribution</h3>
@@ -65,10 +65,31 @@
             </div>
         </div>
     </div>
+    <div class="my-16">
+        <div>
+            <h3 class="text-2xl font-semibold pb-4">Books read</h3>
+            <div>
+                {% for book in data.list %}
+                <div class="flex py-2">
+                    <div>
+                        <img class="h-24" src="{{ book.cover_url }}" />
+                    </div>
+
+                    <div class="pl-4">
+                        <h4 class="text-md font-semibold">{{ book.title }}</h4>
+                        <p>{{ book.author }}</p>
+                        <p>{{ book.num_pages}} pages</p>
+                        <p>{{ book.rating }}</p>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
 </div>
 <script>
-    const renderTooltip = (graph_data) => {
-        if (graph_data["tooltip"] === "") {
+    const renderTooltip = (graphData) => {
+        if (graphData["tooltip"] === "") {
             return {}
         }
 
@@ -76,55 +97,55 @@
             callbacks: {
                 title: function (tooltipItems) {
                     // Assuming the label for each bin is passed from Python in the format "start - end"
-                    return `${graph_data["tooltip"]["title"]}: ${tooltipItems[0].label}`;
+                    return `${graphData["tooltip"]["title"]}: ${tooltipItems[0].label}`;
                 },
                 label: function (tooltipItem) {
-                    return `${graph_data["tooltip"]["label"]}: ${tooltipItem.raw}`;
+                    return `${graphData["tooltip"]["label"]}: ${tooltipItem.raw}`;
                 }
             }
         }
     }
 
-    const renderChart = (elementId, graph_data) => {
+    const renderChart = (elementId, graphData) => {
         const ctx = document.getElementById(elementId);
-        if (!graph_data) {
+        if (!graphData) {
             return
         }
 
         const myChart = new Chart(ctx, {
-            type: graph_data["type"],
+            type: graphData["type"],
             data: {
-                labels: graph_data["labels"],
-                datasets: graph_data["datasets"]
+                labels: graphData["labels"],
+                datasets: graphData["datasets"]
             },
             options: {
                 scales: {
                     x: {
                         title: {
                             display: true,
-                            text: graph_data["x_axis_label"],
+                            text: graphData["x_axis_label"],
                         }
                     },
                     y: {
                         title: {
                             display: true,
-                            text: graph_data["y_axis_label"],
+                            text: graphData["y_axis_label"],
                         },
                         beginAtZero: true
                     }
                 },
                 plugins: {
                     legend: {
-                        display: false
+                        display: true
                     },
-                    tooltip: renderTooltip(graph_data)
+                    tooltip: renderTooltip(graphData)
                 }
             }
         });
     }
 
     renderChart('books-per-month', {{ graphs_data["books_read"] | safe }})
-    if ({{graphs_data["books_read_compared_to_year"] | safe }} !== "null") {
+    if ({{ graphs_data["books_read_compared_to_year"] | safe }} !== "null") {
         renderChart('books-compared-to-year', {{ graphs_data["books_read_compared_to_year"] | safe }})
     }
     renderChart('books-length-dist', {{ graphs_data["book_length_distribution"] | safe }})

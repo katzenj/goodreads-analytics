@@ -1,5 +1,5 @@
 from datetime import date, datetime
-from typing import List, Optional, Union
+from typing import Any, Dict, List, Optional, Union
 
 
 from dateutil.parser import parse
@@ -90,6 +90,25 @@ def upsert_books_data(user_id: Optional[int], books: List[models.Book]) -> bool:
 
 def upsert_user_name(user_id: Union[str, int], name: str) -> bool:
     return db.upsert_user_name(user_id, name)
+
+
+def fetch_cached_dashboard(
+    user_id: str, year: Optional[Union[str, int]]
+) -> Optional[Dict[Any, Any]]:
+    return db.fetch_cached_dashboard(user_id, year)
+
+
+def upsert_dashboard(
+    user_id: str, year: Optional[Union[str, int]], dashboard: models.Dashboard
+) -> bool:
+    return db.upsert_dashboard(user_id, year, dashboard)
+
+
+def delete_cached_dashboard(user_id: str) -> bool:
+    return db.delete_cached_dashboard(user_id)
+
+
+# PRIVATE FUNCTIONS
 
 
 def _parse_optional_date(optional_date: Optional[str]) -> Optional[date]:

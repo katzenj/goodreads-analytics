@@ -1,11 +1,15 @@
+from dataclasses import asdict
 from typing import Any, Dict, List, Optional, Union
 
+import json
 import os
 
 from datetime import date
 from dateutil.parser import parse
 from dotenv import load_dotenv
 from supabase import create_client, Client
+
+from goodreads_visualizer.models import Dashboard
 
 
 if os.getenv("PYTHON_ENV") == "development":
@@ -119,6 +123,76 @@ def upsert_user_name(user_id: Union[str, int], name: str) -> bool:
         .execute()
     )
     return True
+
+
+def fetch_cached_dashboard(
+    user_id: str, year: Optional[Union[str, int]]
+) -> Optional[Dict[Any, Any]]:
+    year_query = "all_time" if year is None else year
+    internal_user_id = (
+        supabase.table("users").select("id").eq("external_id", user_id).execute().data
+    )
+    if len(internal_user_id) == 0:
+        return None
+
+    res = (
+        supabase.table("dashboards")
+        .select("data")
+        .eq("user_id", internal_user_id[0]["id"])
+        .eq("year", year_query)
+        .execute()
+    )
+
+    if not res.data:
+        return None
+
+    res_dict = json.loads(res.data[0]["data"])
+    return res_dict
+
+
+def upsert_dashboard(
+    user_id: str, year: Optional[Union[str, int]], dashboard: Dashboard
+) -> bool:
+    year_query = "all_time" if year is None else year
+    internal_user_id = (
+        supabase.table("users").select("id").eq("external_id", user_id).execute().data
+    )
+    if len(internal_user_id) == 0:
+        return False
+
+    res = (
+        supabase.table("dashboards")
+        .upsert(
+            {
+                "user_id": internal_user_id[0]["id"],
+                "year": year_query,
+                "data": json.dumps(asdict(dashboard)),
+            },
+            on_conflict="user_id, year",
+        )
+        .execute()
+    )
+
+    return True
+
+
+def delete_cached_dashboard(user_id: str) -> bool:
+    internal_user_id = (
+        supabase.table("users").select("id").eq("external_id", user_id).execute().data
+    )
+    if len(internal_user_id) == 0:
+        return False
+
+    res = (
+        supabase.table("dashboards")
+        .delete()
+        .eq("user_id", internal_user_id[0]["id"])
+        .execute()
+    )
+    return True
+
+
+# PRIVATE FUNCTIONS
 
 
 def _unique_books(books: List[models.Book]) -> List[models.Book]:

@@ -39,7 +39,7 @@
             <div class="pt-6 lg:p-0">
                 <form id="re-sync" action="{{ url_for('sync') }}" method="post" class="flex flex-col lg:flex-row">
                     <input type="hidden" name="user_id" value="{{ user_id }}">
-                    {% if last_synced_at %}<span class="lg:m-auto pr-2">Last synced at: <date>{{ last_synced_at }}
+                    {% if last_synced_at %}<span class="lg:m-auto pr-2">Last synced: <date>{{ last_synced_at }}
                         </date>
                     </span>{% endif %}
                     <button type="submit"

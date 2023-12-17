@@ -6,11 +6,18 @@
     <title>Goodreads Visualizer</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    <link rel="stylesheet" href="{{ url_for('static', filename='css/base.css') }}">
-    <link rel="stylesheet" href="{{ url_for('static', filename='css/styles.css') }}">
+    <script src="https://cdn.jsdelivr.net/npm/apexcharts"></script>
+    <link
+      rel="stylesheet"
+      href="{{ url_for('static', filename='css/base.css') }}"
+    />
+    <link
+      rel="stylesheet"
+      href="{{ url_for('static', filename='css/styles.css') }}"
+    />
   </head>
   <body>
-    <div class="container mx-auto h-screen p-8 md:px-16">
+    <div class="container mx-auto h-screen py-8 px-0 md:px-8">
       <h1 class="text-4xl font-bold mb-6">Goodreads Visualizer</h1>
       {% block content %} {% endblock %}
     </div>
