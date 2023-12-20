@@ -35,14 +35,23 @@ def get_user_books_data(
 
     ratings = [book.rating for book in read_books if book.rating is not None]
     num_pages = [book.num_pages for book in read_books if book.num_pages is not None]
+    min_rated_book = _optional_min_rated_book(read_books)
+    max_rated_book = _optional_max_rated_book(read_books)
+    longest_book = _optional_longest_book(read_books)
+    shortest_book = _optional_shortest_book(read_books)
 
     return models.BookData(
         count=len(read_books),
-        total_pages=sum(num_pages),
+        total_pages=f"{sum(num_pages):,}",
+        max_rated_book=max_rated_book,
+        min_rated_book=min_rated_book,
         max_rating=_optional_rounded_max(ratings),
+        min_rating=_optional_rounded_min(ratings),
         average_rating=round(np.mean(ratings), 1),
-        average_length=round(np.mean(num_pages), 2),
+        average_length=round(np.mean(num_pages)),
         max_length=_optional_rounded_max(num_pages),
+        longest_book=longest_book,
+        shortest_book=shortest_book,
         list=sorted(read_books, key=lambda x: x.date_read, reverse=True),
     )
 
@@ -130,6 +139,45 @@ def _optional_rounded_max(data: List[Optional[int]]) -> Optional[int]:
         return None
 
     return round(max(data))
+
+
+def _optional_min_rated_book(data: List[models.Book]) -> Optional[models.Book]:
+    if len(data) == 0:
+        return None
+
+    min_rating = min([book.rating for book in data if book.rating is not None])
+    min_rated_books = [book for book in data if book.rating == min_rating]
+
+    # Get lowest rated book that was read latest.
+    return max(min_rated_books, key=lambda x: x.date_read)
+
+
+def _optional_max_rated_book(data: List[models.Book]) -> Optional[models.Book]:
+    if len(data) == 0:
+        return None
+
+    return max(data, key=lambda x: (x.rating, x.date_read))
+
+
+def _optional_longest_book(data: List[models.Book]) -> Optional[models.Book]:
+    if len(data) == 0:
+        return None
+
+    return max(data, key=lambda x: x.num_pages)
+
+
+def _optional_shortest_book(data: List[models.Book]) -> Optional[models.Book]:
+    if len(data) == 0:
+        return None
+
+    return min(data, key=lambda x: x.num_pages)
+
+
+def _optional_rounded_min(data: List[Optional[int]]) -> Optional[int]:
+    if len(data) == 0:
+        return None
+
+    return round(min(data))
 
 
 def _generate_distribution(data, nbins=15):

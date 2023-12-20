@@ -40,7 +40,6 @@ def get_read_books_for_user(
                 user_id=data["user_id"],
                 id=data["id"],
                 isbn=data["isbn"],
-                cover_url=data["cover_url"],
             )
         )
 
@@ -70,7 +69,6 @@ def get_user_books_data_for_years(
                 user_id=data["user_id"],
                 id=data["id"],
                 isbn=data["isbn"],
-                cover_url=data["cover_url"],
             )
         )
     return data_models

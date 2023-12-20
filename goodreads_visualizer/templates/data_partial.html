@@ -1,45 +1,119 @@
 <div class="mx-auto">
-    <div>
-        <dl
-            class="grid grid-cols-1 lg:grid-cols-5 text-center xl:py-4 rounded-lg border border-zinc-200 bg-zinc-100/40 lg:divide-x-2 lg:divide-y-0 divide-y-2">
-            <div class="mx-auto flex w-full flex-col p-8 justify-between">
-                <dt class="text-base leading-7 text-gray-600">Books read</dt>
-                <dd class="font-semibold tracking-tight text-gray-900 text-3xl">
-                    {{ data.count }}
-                </dd>
+    <div class="data-overview">
+        <div class="book-metrics-v2">
+            <dl
+                class="grid grid-cols-1 lg:grid-cols-4 text-center xl:py-4 rounded-lg border border-zinc-200 bg-zinc-100/40 lg:divide-x-2 lg:divide-y-0 divide-y-2">
+                <div class="mx-auto flex w-full flex-col p-8 justify-between">
+                    <dt class="text-base leading-7 text-gray-600">Books read</dt>
+                    <dd class="font-semibold tracking-tight text-gray-900 text-3xl">
+                        {{ data.count }}
+                    </dd>
+                </div>
+                <div class="mx-auto flex w-full flex-col p-8 justify-between">
+                    <dt class="text-base leading-7 text-gray-600">
+                        Total pages
+                    </dt>
+                    <dd class="font-semibold tracking-tight text-gray-900 text-3xl">
+                        {{ data.total_pages }}
+                    </dd>
+                </div>
+                <div class="mx-auto flex w-full flex-col p-8 justify-between">
+                    <dt class="text-base leading-7 text-gray-600">
+                        Average book length
+                    </dt>
+                    <dd class="font-semibold tracking-tight text-gray-900 text-3xl">
+                        {{ data.average_length }}
+                    </dd>
+                </div>
+                <div class="mx-auto flex w-full flex-col p-8  justify-between">
+                    <dt class="text-base leading-7 text-gray-600">
+                        Average book rating
+                    </dt>
+                    <dd class="font-semibold tracking-tight text-gray-900 text-3xl">
+                        {{ data.average_rating }}
+                    </dd>
+                </div>
+            </dl>
+        </div>
+        {% if data.longest_book and data.count > 1 %}
+        <div class="my-8">
+            <hr />
+        </div>
+        <div class="grid grid-cols-1 gap-8 md:grid-cols-2">
+            <div>
+                <h3 class="text-2xl font-semibold">Shortest book</h3>
+                <div class="flex py-2">
+                    <div>
+                        <img class="w-24 h-32 md:w-44 md:h-60 w-max-w-none" src="{{ data.shortest_book.cover_url }}"
+                            onload="checkImageSize(this)" />
+                    </div>
+
+                    <div class="flex flex-col">
+                        <div class="pl-4 my-auto mr-2">
+                            <p>{{ data.shortest_book.title }}</p>
+                            <h4 class="text-xl font-semibold">{{ data.shortest_book.num_pages }} pages</h4>
+                        </div>
+                    </div>
+                </div>
             </div>
-            <div class="mx-auto flex w-full flex-col p-8 justify-between">
-                <dt class="text-base leading-7 text-gray-600">Longest book</dt>
-                <dd class="font-semibold tracking-tight text-gray-900 text-3xl">
-                    {{ data.max_length }}
-                </dd>
+            <div>
+                <h3 class="text-2xl font-semibold">Longest book</h3>
+                <div class="flex py-2">
+                    <div>
+                        <img class="w-24 h-32 md:w-44 md:h-60 max-w-none" src="{{ data.longest_book.cover_url }}"
+                            onload="checkImageSize(this)" />
+                    </div>
+
+                    <div class="flex flex-col">
+                        <div class="pl-4 my-auto">
+                            <p>{{ data.longest_book.title }}</p>
+                            <h4 class="text-xl font-semibold">{{ data.longest_book.num_pages }} pages</h4>
+                        </div>
+                    </div>
+                </div>
             </div>
-            <div class="mx-auto flex w-full flex-col p-8 justify-between">
-                <dt class="text-base leading-7 text-gray-600">
-                    Average book length
-                </dt>
-                <dd class="font-semibold tracking-tight text-gray-900 text-3xl">
-                    {{ data.average_length }}
-                </dd>
+        </div>
+        <div class="my-8">
+            <hr />
+        </div>
+        <div class="grid grid-cols-1 gap-8 md:gap-0 md:grid-cols-2 mb-8">
+            <div>
+                <h3 class="text-2xl font-semibold">Lowest rated book</h3>
+                <div class="flex py-2">
+                    <div>
+                        <img class="w-24 h-32 md:w-44 md:h-60 max-w-none" src="{{ data.min_rated_book.cover_url }}"
+                            onload="checkImageSize(this)" />
+                    </div>
+
+                    <div class="flex flex-col">
+                        <div class="pl-4 my-auto mr-2">
+                            <p>{{ data.min_rated_book.title }}</p>
+                            {{ data.min_rated_book.star_rating | safe }}
+                        </div>
+                    </div>
+                </div>
             </div>
-            <div class="mx-auto flex w-full flex-col p-8  justify-between">
-                <dt class="text-base leading-7 text-gray-600">Max rating</dt>
-                <dd class="font-semibold tracking-tight text-gray-900 text-3xl">
-                    {{ data.max_rating }}
-                </dd>
+            <div>
+                <h3 class="text-2xl font-semibold">Highest rated book</h3>
+                <div class="flex py-2">
+                    <div>
+                        <img class="min-w-20 w-20 h-32 md:w-44 md:h-60 max-w-none"
+                            src="{{ data.max_rated_book.cover_url }}" onload="checkImageSize(this)" />
+                    </div>
+
+                    <div class="flex flex-col">
+                        <div class="pl-4 my-auto">
+                            <p>{{ data.max_rated_book.title }}</p>
+                            {{ data.max_rated_book.star_rating | safe }}
+                        </div>
+                    </div>
+                </div>
             </div>
-            <div class="mx-auto flex w-full flex-col p-8  justify-between">
-                <dt class="text-base leading-7 text-gray-600">
-                    Average book rating
-                </dt>
-                <dd class="font-semibold tracking-tight text-gray-900 text-3xl">
-                    {{ data.average_rating }}
-                </dd>
-            </div>
-        </dl>
+        </div>
+        {% endif %}
     </div>
     <hr />
-    <div class="my-16">
+    <div class="mt-8 mb-16">
         <div class="grid grid-cols-1 lg:grid-cols-2 gap-8 lg:gap-16">
             <div>
                 <h3 class="text-2xl font-semibold pb-4">Books read per month</h3>
@@ -72,14 +146,14 @@
                 {% for book in data.list %}
                 <div class="flex py-2">
                     <div>
-                        <img class="h-24 w-16 max-w-none" src="{{ book.cover_url }}" />
+                        <img class="h-32 w-24 max-w-none" src="{{ book.cover_url }}" onload="checkImageSize(this)" />
                     </div>
 
                     <div class="pl-4">
                         <h4 class="text-md font-semibold">{{ book.title }}</h4>
                         <p>{{ book.author }}</p>
                         <p>{{ book.num_pages}} pages</p>
-                        <p>{{ book.rating }}</p>
+                        {{ book.star_rating | safe}}
                     </div>
                 </div>
                 {% endfor %}
@@ -88,6 +162,12 @@
     </div>
 </div>
 <script>
+    const checkImageSize = (imageElement) => {
+        if (imageElement.naturalWidth === 1 && imageElement.naturalHeight === 1) {
+            // The image is a 1x1 pixel image, replace it
+            imageElement.src = "{{ url_for('static', filename='images/no_book_cover.png') }}"
+        }
+    }
     const renderTooltip = (graphData) => {
         if (graphData["tooltip"] === "") {
             return {}

@@ -46,7 +46,6 @@ def fetch_books_data(user_id: str) -> List[models.Book]:
                 user_id=user_id,
                 id=None,
                 isbn=data["isbn"],
-                cover_url=data["cover_url"],
             )
         )
 

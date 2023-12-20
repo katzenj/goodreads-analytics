@@ -28,11 +28,34 @@ class Book:
     read_count: Optional[int]
     date_published: Optional[date]
     date_started: Optional[date]
-    cover_url: str
     user_id: int
     id: Optional[int]
     isbn: str
     review: str
+
+    @property
+    def cover_url(self):
+        return f"https://covers.openlibrary.org/b/isbn/{self.isbn}-M.jpg"
+
+    @property
+    def star_rating(self):
+        if self.rating is None:
+            return None
+
+        # return "⭐" * self.rating
+        stars = (
+            """
+        <svg width="20" height="16" viewBox="0 0 576 512" xmlns="http://www.w3.org/2000/svg">
+            <path fill="#000000" d="M259.3 17.8L194 150.2L47.9 171.5c-26.2 3.8-36.7 36.1-17.7 54.6l105.7 103l-25 145.5c-4.5 26.3 23.2 46 46.4 33.7L288 439.6l130.7 68.7c23.2 12.2 50.9-7.4 46.4-33.7l-25-145.5l105.7-103c19-18.5 8.5-50.8-17.7-54.6L382 150.2L316.7 17.8c-11.7-23.6-45.6-23.9-57.4 0"/>
+        </svg>
+        """
+            * self.rating
+        )
+        return f"""
+            <div class="flex flex-row">
+                {stars}
+            </div>
+            """
 
     def serialize(self):
         return {
@@ -62,9 +85,14 @@ class BookData(DataclassBase):
     count: str
     total_pages: str
     max_rating: str
+    max_rated_book: Book
+    min_rating: str
+    min_rated_book: Book
     average_rating: str
     average_length: str
     max_length: str
+    longest_book: Book
+    shortest_book: Book
     list: List[Book]
 
     def serialize(self):
@@ -72,6 +100,9 @@ class BookData(DataclassBase):
             "count": self.count,
             "total_pages": self.total_pages,
             "max_rating": self.max_rating,
+            "max_rated_book": self.max_rated_book.serialize(),
+            "min_rating": self.min_rating,
+            "min_rated_book": self.min_rated_book.serialize(),
             "average_rating": self.average_rating,
             "average_length": self.average_length,
             "max_length": self.max_length,
