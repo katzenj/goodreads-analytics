@@ -38,6 +38,7 @@ def get_user_books_data(
 
     return models.BookData(
         count=len(read_books),
+        total_pages=sum(num_pages),
         max_rating=_optional_rounded_max(ratings),
         average_rating=round(np.mean(ratings), 1),
         average_length=round(np.mean(num_pages), 2),

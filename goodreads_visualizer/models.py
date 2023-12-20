@@ -60,6 +60,7 @@ class Book:
 @dataclass
 class BookData(DataclassBase):
     count: str
+    total_pages: str
     max_rating: str
     average_rating: str
     average_length: str
@@ -69,6 +70,7 @@ class BookData(DataclassBase):
     def serialize(self):
         return {
             "count": self.count,
+            "total_pages": self.total_pages,
             "max_rating": self.max_rating,
             "average_rating": self.average_rating,
             "average_length": self.average_length,

@@ -563,6 +563,9 @@ video {
 .w-12 {
   width: 3rem;
 }
+.w-16 {
+  width: 4rem;
+}
 .w-52 {
   width: 13rem;
 }
@@ -571,6 +574,9 @@ video {
 }
 .w-full {
   width: 100%;
+}
+.max-w-none {
+  max-width: none;
 }
 @keyframes spin {
 
@@ -647,9 +653,9 @@ video {
 .p-8 {
   padding: 2rem;
 }
-.px-0 {
-  padding-left: 0px;
-  padding-right: 0px;
+.px-12 {
+  padding-left: 3rem;
+  padding-right: 3rem;
 }
 .px-3 {
   padding-left: 0.75rem;
