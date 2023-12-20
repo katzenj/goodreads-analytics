@@ -155,8 +155,9 @@ def _optional_min_rated_book(data: List[models.Book]) -> Optional[models.Book]:
 def _optional_max_rated_book(data: List[models.Book]) -> Optional[models.Book]:
     if len(data) == 0:
         return None
+    filtered = [book for book in data if book.rating is not None]
 
-    return max(data, key=lambda x: (x.rating, x.date_read))
+    return max(filtered, key=lambda x: (x.rating, x.date_read))
 
 
 def _optional_longest_book(data: List[models.Book]) -> Optional[models.Book]:
