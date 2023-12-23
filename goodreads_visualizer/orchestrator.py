@@ -181,7 +181,7 @@ def _optional_rounded_min(data: List[Optional[int]]) -> Optional[int]:
     return round(min(data))
 
 
-def _generate_distribution(data, nbins=15):
+def _generate_distribution(data, nbins=None):
     if len(data) == 0:
         return []
 
@@ -190,19 +190,19 @@ def _generate_distribution(data, nbins=15):
 
     # Find the min and max values for the data
     min_val, max_val = min(data), max(data)
-
-    # Calculate the bin width using the range of data and the desired number of bins
-    # The bin width should be a whole number, so we round up to ensure that all data
-    # fits into the bins
     range_val = max_val - min_val
-    bin_width = max(int(np.ceil(range_val / nbins)), 1)  # Bin width at least 1
 
-    # Calculate the bin edges, ensuring they are whole numbers
-    bin_edges = np.arange(min_val, max_val, bin_width).tolist()
+    # Determine the number of bins if not specified
+    if nbins is None:
+        # Freedman-Diaconis rule: bin width = 2 * IQR * n^(-1/3)
+        # Alternatively, Sturges' formula: bin count = log2(n) + 1
+        q75, q25 = np.percentile(data, [75, 25])
+        iqr = q75 - q25
+        bin_width = (2 * iqr) / (len(data) ** (1 / 3))
+        nbins = max(int(range_val / bin_width), 1)
 
-    # Add an extra bin edge to include the max value
-    if bin_edges[-1] < max_val:
-        bin_edges.append(bin_edges[-1] + bin_width)
+    # Calculate the bin edges
+    bin_edges = np.linspace(min_val, max_val, nbins + 1)
 
     # Use numpy to calculate the histogram
     hist, _ = np.histogram(data, bins=bin_edges)
