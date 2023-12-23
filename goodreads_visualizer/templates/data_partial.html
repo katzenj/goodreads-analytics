@@ -42,13 +42,13 @@
         <div class="grid grid-cols-1 gap-8 md:grid-cols-2">
             <div>
                 <h3 class="text-2xl font-semibold">Shortest book</h3>
-                <div class="flex py-2">
-                    <div>
+                <div class="grid grid-cols-8 py-2">
+                    <div class="col-span-3">
                         <img class="w-24 h-32 md:w-44 md:h-60 w-max-w-none" src="{{ data.shortest_book.cover_url }}"
                             onload="checkImageSize(this)" />
                     </div>
 
-                    <div class="flex flex-col">
+                    <div class="col-span-5 flex flex-col">
                         <div class="pl-4 my-auto mr-2">
                             <p>{{ data.shortest_book.title }}</p>
                             <h4 class="text-xl font-semibold">{{ data.shortest_book.num_pages }} pages</h4>
@@ -58,13 +58,13 @@
             </div>
             <div>
                 <h3 class="text-2xl font-semibold">Longest book</h3>
-                <div class="flex py-2">
-                    <div>
+                <div class="grid grid-cols-8 py-2">
+                    <div class="col-span-3">
                         <img class="w-24 h-32 md:w-44 md:h-60 max-w-none" src="{{ data.longest_book.cover_url }}"
                             onload="checkImageSize(this)" />
                     </div>
 
-                    <div class="flex flex-col">
+                    <div class="col-span-5 flex flex-col">
                         <div class="pl-4 my-auto">
                             <p>{{ data.longest_book.title }}</p>
                             <h4 class="text-xl font-semibold">{{ data.longest_book.num_pages }} pages</h4>
@@ -79,13 +79,13 @@
         <div class="grid grid-cols-1 gap-8 md:gap-0 md:grid-cols-2 mb-8">
             <div>
                 <h3 class="text-2xl font-semibold">Lowest rated book</h3>
-                <div class="flex py-2">
-                    <div>
+                <div class="grid grid-cols-8 py-2">
+                    <div class="col-span-3">
                         <img class="w-24 h-32 md:w-44 md:h-60 max-w-none" src="{{ data.min_rated_book.cover_url }}"
                             onload="checkImageSize(this)" />
                     </div>
 
-                    <div class="flex flex-col">
+                    <div class="col-span-5 flex flex-col">
                         <div class="pl-4 my-auto mr-2">
                             <p>{{ data.min_rated_book.title }}</p>
                             {{ data.min_rated_book.star_rating | safe }}
@@ -95,13 +95,13 @@
             </div>
             <div>
                 <h3 class="text-2xl font-semibold">Highest rated book</h3>
-                <div class="flex py-2">
-                    <div>
+                <div class="grid grid-cols-8 py-2">
+                    <div class="col-span-3">
                         <img class="min-w-20 w-20 h-32 md:w-44 md:h-60 max-w-none"
                             src="{{ data.max_rated_book.cover_url }}" onload="checkImageSize(this)" />
                     </div>
 
-                    <div class="flex flex-col">
+                    <div class="col-span-5 flex flex-col">
                         <div class="pl-4 my-auto">
                             <p>{{ data.max_rated_book.title }}</p>
                             {{ data.max_rated_book.star_rating | safe }}
