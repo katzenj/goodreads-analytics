@@ -39,6 +39,8 @@ def get_user_books_data(
     max_rated_book = _optional_max_rated_book(read_books)
     longest_book = _optional_longest_book(read_books)
     shortest_book = _optional_shortest_book(read_books)
+    average_rating = round(np.mean(ratings)) if len(ratings) > 0 else 0
+    average_length = round(np.mean(num_pages)) if len(num_pages) > 0 else 0
 
     return models.BookData(
         count=len(read_books),
@@ -47,8 +49,8 @@ def get_user_books_data(
         min_rated_book=min_rated_book,
         max_rating=_optional_rounded_max(ratings),
         min_rating=_optional_rounded_min(ratings),
-        average_rating=round(np.mean(ratings), 1),
-        average_length=round(np.mean(num_pages)),
+        average_rating=average_rating,
+        average_length=average_length,
         max_length=_optional_rounded_max(num_pages),
         longest_book=longest_book,
         shortest_book=shortest_book,
