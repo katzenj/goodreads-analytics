@@ -25,13 +25,8 @@ class Book:
     rating: Optional[int]
     num_pages: int
     avg_rating: float
-    read_count: Optional[int]
     date_published: Optional[date]
-    date_started: Optional[date]
-    user_id: int
-    id: Optional[int]
     isbn: str
-    review: str
 
     @property
     def cover_url(self):
@@ -66,33 +61,26 @@ class Book:
             "rating": self.rating,
             "num_pages": self.num_pages,
             "avg_rating": self.avg_rating,
-            "read_count": self.read_count,
             "date_published": (
                 self.date_published.isoformat() if self.date_published else None
             ),
-            "date_started": (
-                self.date_started.isoformat() if self.date_started else None
-            ),
-            "cover_url": self.cover_url,
-            "user_id": self.user_id,
             "isbn": self.isbn,
-            "review": self.review,
         }
 
 
 @dataclass
 class BookData(DataclassBase):
-    count: str
+    count: int
     total_pages: str
-    max_rating: str
-    max_rated_book: Book
-    min_rating: str
-    min_rated_book: Book
-    average_rating: str
-    average_length: str
-    max_length: str
-    longest_book: Book
-    shortest_book: Book
+    max_rating: Optional[int]
+    max_rated_book: Optional[Book]
+    min_rating: Optional[int]
+    min_rated_book: Optional[Book]
+    average_rating: Optional[str]
+    average_length: Optional[str]
+    max_length: Optional[int]
+    longest_book: Optional[Book]
+    shortest_book: Optional[Book]
     list: List[Book]
 
     def serialize(self):

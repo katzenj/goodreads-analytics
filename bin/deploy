@@ -1,6 +1,0 @@
-#!/bin/bash
-
-poetry install
-poetry export -f requirements.txt > requirements.txt
-fly deploy
-

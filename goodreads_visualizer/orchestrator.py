@@ -1,37 +1,22 @@
-from datetime import datetime
-from typing import Dict, List, Tuple, Union, Optional
-
-
 import calendar
+from typing import Dict, List, Optional, Tuple, Union
+
 import numpy as np
 
-
 try:
-    from goodreads_visualizer import api, db, models, goodreads_api
+    from goodreads_visualizer import models
 except ModuleNotFoundError:
-    import api
-    import db
-    import goodreads_api
     import models
 
 YearType = Optional[Union[str, int]]
 
 
 def get_user_books_data(
-    user_id: Union[str, int], selected_year: YearType
+    books: List[models.Book], year: Optional[YearType]
 ) -> models.BookData:
-    if selected_year == "All time":
-        year = None
-    else:
-        year = selected_year
-
-    last_sync_date = api.get_last_sync_date(user_id)
-    read_books = []
-    if last_sync_date is None:
-        sync_user_name(user_id)
-        sync_user_data(user_id)
-
-    read_books = api.get_read_books_for_user(user_id, year)
+    read_books = [book for book in books if book.date_read is not None]
+    if year is not None:
+        read_books = [book for book in read_books if int(book.date_read.year) == int(year)]
 
     ratings = [book.rating for book in read_books if book.rating is not None]
     num_pages = [book.num_pages for book in read_books if book.num_pages is not None]
@@ -49,8 +34,8 @@ def get_user_books_data(
         min_rated_book=min_rated_book,
         max_rating=_optional_rounded_max(ratings),
         min_rating=_optional_rounded_min(ratings),
-        average_rating=average_rating,
-        average_length=average_length,
+        average_rating=str(average_rating),
+        average_length=str( average_length ),
         max_length=_optional_rounded_max(num_pages),
         longest_book=longest_book,
         shortest_book=shortest_book,
@@ -58,36 +43,27 @@ def get_user_books_data(
     )
 
 
-def get_user_name(user_id: Union[str, int]) -> str:
-    return api.get_user_name(user_id)
-
-
-def get_user_years(user_id: Union[str, int]) -> List[str]:
-    extra_years = ["All time", str(datetime.now().year)]
-    return sorted(set(db.get_user_years(user_id) + extra_years), reverse=True)
-
-
 def graphs_data_for_year(
-    user_id: Union[str, int], selected_year: YearType
+    all_read_books: List[models.Book], year: Optional[YearType] = None
 ) -> models.GraphsData:
-    if selected_year == "All time":
-        year = None
+    if year is not None:
+        read_books_this_year = [book for book in all_read_books if int(book.date_read.year) == int(year)]
+        read_books_both_years = [book for book in all_read_books if int(book.date_read.year) in [int(year), int(year) - 1]]
     else:
-        year = selected_year
+        read_books_this_year = all_read_books
+        read_books_both_years = all_read_books
 
-    read_books = api.get_read_books_for_user(user_id, year)
-
-    books_read_by_month = _books_read_by_month_graph_data(read_books)
+    books_read_by_month = _books_read_by_month_graph_data(read_books_this_year)
 
     books_read_compared_to_year = None
     if year is not None:
         books_read_compared_to_year = _books_compared_to_year_graph_data(
-            user_id, int(year), int(year) - 1
+            read_books_both_years, int(year), int(year) - 1
         )
 
-    book_length_distribution_data = _book_length_distribution(read_books)
-    book_rating_distribution_data = _book_rating_distribution(read_books)
-    book_publish_year_distribution_data = _book_publish_year_distribution(read_books)
+    book_length_distribution_data = _book_length_distribution(read_books_this_year)
+    book_rating_distribution_data = _book_rating_distribution(read_books_this_year)
+    book_publish_year_distribution_data = _book_publish_year_distribution(read_books_this_year)
 
     return models.GraphsData(
         books_read=books_read_by_month,
@@ -97,40 +73,6 @@ def graphs_data_for_year(
         book_publish_year_distribution=book_publish_year_distribution_data,
     )
 
-
-def sync_user_data(user_id: Union[str, int]) -> bool:
-    # api.delete_cached_dashboard(user_id)
-    books_data = goodreads_api.fetch_books_data(user_id)
-    return api.upsert_books_data(user_id, books_data)
-
-
-def sync_user_name(user_id: Union[str, int]) -> bool:
-    user_name = goodreads_api.fetch_user_name(user_id)
-    return api.upsert_user_name(user_id, user_name)
-
-
-def fetch_cached_dashboard(
-    user_id: Union[str, int], year: Optional[Union[str, int]]
-) -> Optional[models.Dashboard]:
-    res_dict = api.fetch_cached_dashboard(user_id, year)
-
-    graphs_dict = res_dict["graphs"]
-    metrics_dict = res_dict["metrics"]
-
-    return models.Dashboard(
-        metrics=models.BookData.from_dict(metrics_dict),
-        graphs=models.GraphsData.from_dict(graphs_dict),
-    )
-
-
-def upsert_dashboard(
-    user_id: Union[str, int],
-    year: Optional[Union[str, int]],
-    metrics: models.BookData,
-    graphs: models.GraphsData,
-) -> bool:
-    dashboard = models.Dashboard(metrics=metrics, graphs=graphs)
-    return api.upsert_dashboard(user_id, year, dashboard)
 
 
 # PRIVATE FUNCTIONS
@@ -241,28 +183,27 @@ def _books_read_by_month_graph_data(books: List[models.Book]) -> models.GraphDat
 
 
 def _books_read_compared_to_year_data(
-    user_id: Union[str, int], year: YearType, year_to_compare: YearType
+    read_books: List[models.Book], year: YearType, year_to_compare: YearType
 ) -> Dict[Tuple[str, int], int]:
     years_ints = [int(year), int(year_to_compare)]
-    user_data = api.get_user_books_data_for_years(user_id, years_ints)
     month_year_counts = {
         (calendar.month_abbr[month], year): 0
         for month in range(1, 13)
         for year in years_ints
     }
 
-    for data in user_data:
+    for book in read_books:
         month_year_counts[
-            (calendar.month_abbr[data.date_read.month], data.date_read.year)
+            (calendar.month_abbr[book.date_read.month], book.date_read.year)
         ] += 1
 
     return month_year_counts
 
 
 def _books_compared_to_year_graph_data(
-    user_id: Union[str, int], year: YearType, year_to_compare: YearType
+    read_books: List[models.Book], year: YearType, year_to_compare: YearType
 ) -> models.GraphData:
-    data = _books_read_compared_to_year_data(user_id, year, year_to_compare)
+    data = _books_read_compared_to_year_data(read_books, year, year_to_compare)
 
     year_one_data = [data[(month, year)] for month in calendar.month_abbr[1:]]
     year_two_data = [
@@ -292,7 +233,7 @@ def _books_compared_to_year_graph_data(
 
 def _book_length_distribution(read_books: List[models.Book]) -> models.GraphData:
     distribution = _generate_distribution(
-        [book.num_pages for book in read_books if book.num_pages is not None]
+        [book.num_pages for book in read_books if book.num_pages is not None], nbins=5
     )
     labels = [f"{x[0]}-{x[1]}" for x in distribution]
 

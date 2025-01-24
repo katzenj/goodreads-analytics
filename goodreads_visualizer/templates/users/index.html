@@ -1,51 +1,20 @@
 {% extends 'base.html' %} {% block content %}
 
 <div class="h-screen w-full flex flex-col">
-    <div id="goodreads-form-container">
-        <form id="goodreads-url-form" action="{{ url_for('load_data_for_url') }}" method="POST">
-            <div class="pb-2">
-                <label class="hidden" for="goodreads-url">
-                    Enter your Goodreads URL
-                </label>
-            </div>
-            <div>
-                <input
-                    class="bg-gray-200 appearance-none border-2 border-gray-200 rounded-md w-full py-2 px-4 text-gray-700 leading-tight focus:outline-none focus:bg-white focus:border-teal-500"
-                    id="goodreads-url" name="goodreads_url" value="{{ goodreads_url }}" type="url"
-                    placeholder="Enter your Goodreads URL" required>
-            </div>
-        </form>
-        <div class="py-8">
-            <hr />
-        </div>
-    </div>
     <div id="goodreads-status-container">
         <div class="flex flex-col lg:flex-row justify-between">
             <div>
                 <form action="{{ url_for('reading_data', user_id=user_id) }}" method="POST"
                     class="flex flex-col lg:flex-row">
                     <label class="text-lg lg:m-auto pr-4" for="year-select">Year</label>
-                    <select id="year-select" name="year" 
-                        class="w-52 h-10 rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2"
-                        id="year-select">
+                    <select id="year-select" name="year" onchange="this.form.submit()"
+                        class="w-52 h-10 rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2">
+                        <option value="" {% if not selected_year %}selected="true"{% endif %}>All Time</option>
                         {% for year in years %}
-                        <option value="{{ year }}" {% if year==selected_year %}selected="true" {% endif %}>{{ year }}
-                        </option>
+                        <option value="{{ year }}" {% if year==selected_year %}selected="true"{% endif %}>{{ year }}</option>
                         {% endfor %}
                     </select>
                     <input type="hidden" name="user_id" value="{{ user_id }}">
-                </form>
-            </div>
-            <div class="pt-6 lg:p-0">
-                <form id="re-sync" action="{{ url_for('sync') }}" method="post" class="flex flex-col lg:flex-row">
-                    <input type="hidden" name="user_id" value="{{ user_id }}">
-                    {% if last_synced_at %}<span class="lg:m-auto pr-2">Last synced: <date>{{ last_synced_at }}
-                        </date>
-                    </span>{% endif %}
-                    <button type="submit"
-                        class="text-sm font-medium focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-rose-600 disabled:pointer-events-none border-2 border-grey-300 hover:border-rose-600 h-10 bg-white text-black w-auto px-4 py-2 rounded-md">
-                        Re-sync
-                    </button>
                 </form>
             </div>
         </div>
@@ -56,37 +25,10 @@
     <div id="data-container">
         <h2 class="text-3xl font-semibold my-4">
             {% if user_name %}{{ user_name }}'s {% else %}Your {% endif %}
-            {% if selected_year %} {{ selected_year }} in Review {% else %} All Time Reading Data {% endif %}📚
+            {% if selected_year %}{{ selected_year }} in Review{% else %}All Time Reading Data{% endif %} 📚
         </h2>
         {% include 'data_partial.html' %}
     </div>
-    <div id="loading-spinner" class="hidden py-20">
-        {% include 'components/spinner.html' %}
-    </div>
 </div>
-
-<script>
-    document.getElementById('year-select').addEventListener('change', function () {
-        document.getElementById('loading-spinner').classList.remove('hidden');
-        document.getElementById('data-container').classList.add('hidden');
-        this.form.submit()
-    })
-    document.getElementById('goodreads-url').addEventListener('keypress', function () {
-        if (event.keyCode == 13) {
-            event.preventDefault();
-            this.form.submit()
-            document.getElementById('loading-spinner').classList.remove('hidden');
-            document.getElementById('goodreads-form-container').classList.add('hidden');
-            document.getElementById('goodreads-status-container').classList.add('hidden');
-            document.getElementById('data-container').classList.add('hidden');
-        }
-    })
-    document.getElementById('re-sync').addEventListener('submit', function () {
-        document.getElementById('loading-spinner').classList.remove('hidden');
-        document.getElementById('goodreads-form-container').classList.add('hidden');
-        document.getElementById('goodreads-status-container').classList.add('hidden');
-        document.getElementById('data-container').classList.add('hidden');
-    })
-</script>
 
 {% endblock %}

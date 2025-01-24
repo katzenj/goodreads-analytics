@@ -31,23 +31,20 @@
         const urlInput = document.getElementById('goodreads-url').value;
         const userIdMatch = urlInput.match(/(\d{9})(?:-\w+)?/);
         if (!userIdMatch) {
-            alert('Please enter a valid Goodreads URL.');
+            alert('Please enter a valid Goodreads URL');
+            return;
         }
-    };
-
-    document.getElementById('goodreads-url').addEventListener('keypress', function () {
-        if (event.keyCode == 13) {
-            event.preventDefault();
-            this.form.submit()
-            document.getElementById('loading-spinner-index').classList.remove('hidden');
-            document.getElementById('form-container').classList.add('hidden');
-        }
-    })
-
-    document.getElementById('goodreads-form').addEventListener('submit', function () {
+        // Submit the form if validation passes
+        this.submit();
         document.getElementById('loading-spinner-index').classList.remove('hidden');
         document.getElementById('form-container').classList.add('hidden');
-    })
-</script>
+    };
 
+    document.getElementById('goodreads-url').addEventListener('keypress', function (event) {
+        if (event.key === 'Enter') {
+            event.preventDefault();
+            document.getElementById('goodreads-form').dispatchEvent(new Event('submit'));
+        }
+    });
+</script>
 {% endblock %}

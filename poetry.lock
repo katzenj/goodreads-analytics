@@ -189,6 +189,17 @@ python-versions = "*"
 tests = ["asttokens", "pytest", "littleutils", "rich"]
 
 [[package]]
+name = "feedparser"
+version = "6.0.11"
+description = "Universal feed parser, handles RSS 0.9x, RSS 1.0, RSS 2.0, CDF, Atom 0.3, and Atom 1.0 feeds"
+category = "main"
+optional = false
+python-versions = ">=3.6"
+
+[package.dependencies]
+sgmllib3k = "*"
+
+[[package]]
 name = "flask"
 version = "3.0.0"
 description = "A simple framework for building complex web applications."
@@ -705,6 +716,14 @@ optional = false
 python-versions = ">=3.7"
 
 [[package]]
+name = "sgmllib3k"
+version = "1.0.0"
+description = "Py3k port of sgmllib."
+category = "main"
+optional = false
+python-versions = "*"
+
+[[package]]
 name = "six"
 version = "1.16.0"
 description = "Python 2 and 3 compatibility utilities"
@@ -872,7 +891,7 @@ watchdog = ["watchdog (>=2.3)"]
 [metadata]
 lock-version = "1.1"
 python-versions = "^3.10"
-content-hash = "53073c6993ed2d502ea8f54c1436cc8e61ba63a09cd2a2181c6ee1774f87481d"
+content-hash = "2183819045a1e35aa7077bb16abcf218284b098bad08f09d3bb5c412d0f74ab9"
 
 [metadata.files]
 annotated-types = []
@@ -893,6 +912,7 @@ decorator = []
 deprecation = []
 exceptiongroup = []
 executing = []
+feedparser = []
 flask = []
 gotrue = []
 gunicorn = []
@@ -933,6 +953,7 @@ pyzmq = []
 realtime = []
 requests = []
 ruff = []
+sgmllib3k = []
 six = []
 sniffio = []
 soupsieve = []

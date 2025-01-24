@@ -8,7 +8,7 @@
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/apexcharts"></script>
     <script src="https://cdn.twind.style" crossorigin></script>
-
+    <script src="https://unpkg.com/htmx.org@2.0.4" integrity="sha384-HGfztofotfshcF7+8n44JQL2oJmowVChPTg48S+jvZoztPfvwD79OC/LTtG6dMp+" crossorigin="anonymous"></script>
     <link
       rel="stylesheet"
       href="{{ url_for('static', filename='css/base.css') }}"
@@ -16,7 +16,9 @@
   </head>
   <body>
     <div class="container mx-auto h-screen p-8">
-      <h1 class="text-4xl font-bold mb-6">Goodreads Visualizer</h1>
+      <nav class="flex justify-between items-end mb-6">
+        <h1 class="text-4xl font-bold"><a href="{{ url_for('index') }}">Goodreads Visualizer</a></h1>
+      </nav>
       {% block content %} {% endblock %}
     </div>
   </body>

@@ -1,8 +1,11 @@
-from flask import Flask, render_template, request, redirect, url_for
 from datetime import datetime
 
+from flask import Flask, render_template, request, redirect, url_for
 
-from goodreads_visualizer import api, orchestrator, url_utils, utils
+try :
+    from goodreads_visualizer import orchestrator, goodreads_api, url_utils
+except ModuleNotFoundError:
+    import orchestrator, goodreads_api, url_utils
 
 
 app = Flask(__name__)
@@ -22,18 +25,10 @@ def index():
     if request.method == "POST":
         url = request.form["goodreads_url"]
         user_id = url_utils.parse_user_id(url)
-        return redirect(url_for("reading_data", user_id=user_id))
+        year = datetime.now().year
+        return redirect(url_for("reading_data", user_id=user_id, year=year))
 
     return render_template("index.html")
-
-
-@app.route("/sync", methods=["POST"])
-def sync():
-    user_id = request.form["user_id"]
-
-    orchestrator.sync_user_data(user_id)
-    orchestrator.sync_user_name(user_id)
-    return redirect(url_for("reading_data", user_id=user_id))
 
 
 @app.route("/load_data", methods=["POST"])
@@ -45,34 +40,23 @@ def load_data_for_url():
 
 @app.route("/users/<user_id>", methods=["GET", "POST"])
 def reading_data(user_id):
-    selected_year = request.args.get("year")
-    if selected_year is None:
-        # Default to "current" year
-        selected_year = str(datetime.now().year)
+    year = request.args.get("year") or request.form.get("year")
+    if year == "":
+        year = None
 
-    data = orchestrator.get_user_books_data(user_id, selected_year)
-    graphs_data = orchestrator.graphs_data_for_year(user_id, selected_year)
+    books = goodreads_api.fetch_books_data(user_id)
+    all_read_books = [book for book in books if book.date_read is not None]
 
-    user_name = orchestrator.get_user_name(user_id)
-    years = orchestrator.get_user_years(user_id)
+    years = [str(x) for x in sorted(set([read_book.date_read.year for read_book in all_read_books]), reverse=True)]
 
-    if request.method == "POST":
-        year = request.form["year"]
-        # Redirect to the same page with the year as a query parameter
-        return redirect(url_for("reading_data", user_id=user_id, year=year))
-
-    goodreads_url = url_utils.format_user_url(user_id)
-    last_synced_at = api.get_last_sync_date(user_id)
-    formatted_last_synced_at = utils.format_datetime_in_pt(last_synced_at)
+    data = orchestrator.get_user_books_data(books, year)
+    graphs_data = orchestrator.graphs_data_for_year(all_read_books, year)
 
     return render_template(
         "users/index.html",
+        user_id=user_id,
         years=years,
         data=data,
         graphs_data=graphs_data.serialize(),
-        selected_year=selected_year,
-        user_id=user_id,
-        last_synced_at=formatted_last_synced_at,
-        goodreads_url=goodreads_url,
-        user_name=user_name,
+        selected_year=str(year),
     )
