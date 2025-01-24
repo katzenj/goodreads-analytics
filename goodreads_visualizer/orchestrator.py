@@ -1,22 +1,25 @@
 import calendar
-from typing import Dict, List, Optional, Tuple, Union
+from datetime import datetime
+from typing import Dict, List, Optional, Tuple, cast
 
 import numpy as np
 
 try:
     from goodreads_visualizer import models
 except ModuleNotFoundError:
-    import models
-
-YearType = Optional[Union[str, int]]
+    from . import models
 
 
 def get_user_books_data(
-    books: List[models.Book], year: Optional[YearType]
+    books: List[models.Book], year: Optional[int]
 ) -> models.BookData:
-    read_books = [book for book in books if book.date_read is not None]
+    read_books = []
     if year is not None:
-        read_books = [book for book in read_books if int(book.date_read.year) == int(year)]
+        for book in books:
+            if book.date_read is None:
+                continue
+            elif int(book.date_read.year) == int(year):
+                read_books.append(book)
 
     ratings = [book.rating for book in read_books if book.rating is not None]
     num_pages = [book.num_pages for book in read_books if book.num_pages is not None]
@@ -35,7 +38,7 @@ def get_user_books_data(
         max_rating=_optional_rounded_max(ratings),
         min_rating=_optional_rounded_min(ratings),
         average_rating=str(average_rating),
-        average_length=str( average_length ),
+        average_length=str(average_length),
         max_length=_optional_rounded_max(num_pages),
         longest_book=longest_book,
         shortest_book=shortest_book,
@@ -44,11 +47,25 @@ def get_user_books_data(
 
 
 def graphs_data_for_year(
-    all_read_books: List[models.Book], year: Optional[YearType] = None
+    all_read_books: List[models.Book], year: Optional[int] = None
 ) -> models.GraphsData:
+    read_books = []
     if year is not None:
-        read_books_this_year = [book for book in all_read_books if int(book.date_read.year) == int(year)]
-        read_books_both_years = [book for book in all_read_books if int(book.date_read.year) in [int(year), int(year) - 1]]
+        for book in all_read_books:
+            if book.date_read is None:
+                continue
+            elif int(book.date_read.year) == int(year):
+                read_books.append(book)
+
+    if year is not None:
+        read_books_this_year = [
+            book for book in read_books if int(book.date_read.year) == int(year)
+        ]
+        read_books_both_years = [
+            book
+            for book in read_books
+            if int(book.date_read.year) in [int(year), int(year) - 1]
+        ]
     else:
         read_books_this_year = all_read_books
         read_books_both_years = all_read_books
@@ -63,7 +80,9 @@ def graphs_data_for_year(
 
     book_length_distribution_data = _book_length_distribution(read_books_this_year)
     book_rating_distribution_data = _book_rating_distribution(read_books_this_year)
-    book_publish_year_distribution_data = _book_publish_year_distribution(read_books_this_year)
+    book_publish_year_distribution_data = _book_publish_year_distribution(
+        read_books_this_year
+    )
 
     return models.GraphsData(
         books_read=books_read_by_month,
@@ -74,15 +93,15 @@ def graphs_data_for_year(
     )
 
 
-
 # PRIVATE FUNCTIONS
 
 
 def _optional_rounded_max(data: List[Optional[int]]) -> Optional[int]:
+    filtered = [x for x in data if x is not None]
     if len(data) == 0:
         return None
 
-    return round(max(data))
+    return round(max(filtered))
 
 
 def _optional_min_rated_book(data: List[models.Book]) -> Optional[models.Book]:
@@ -90,10 +109,12 @@ def _optional_min_rated_book(data: List[models.Book]) -> Optional[models.Book]:
         return None
 
     min_rating = min([book.rating for book in data if book.rating is not None])
-    min_rated_books = [book for book in data if book.rating == min_rating]
+    min_rated_books = cast(
+        List[models.Book], [book for book in data if book.rating == min_rating]
+    )
 
     # Get lowest rated book that was read latest.
-    return max(min_rated_books, key=lambda x: x.date_read)
+    return max(min_rated_books, key=lambda x: cast(datetime, x.date_read))
 
 
 def _optional_max_rated_book(data: List[models.Book]) -> Optional[models.Book]:
@@ -122,7 +143,7 @@ def _optional_rounded_min(data: List[Optional[int]]) -> Optional[int]:
     if len(data) == 0:
         return None
 
-    return round(min(data))
+    return round(min(cast(List[int], data)))
 
 
 def _generate_distribution(data, nbins=None):
@@ -163,12 +184,15 @@ def _generate_distribution(data, nbins=None):
 def _books_read_by_month_graph_data(books: List[models.Book]) -> models.GraphData:
     counts = [0] * 12
     for book in books:
+        if book.date_read is None:
+            continue
+
         idx = book.date_read.month - 1
         counts[idx] += 1
 
     return models.GraphData(
         type="bar",
-        labels=calendar.month_abbr[1:],
+        labels=list(calendar.month_abbr[1:]),
         x_axis_label="Month",
         y_axis_label="Books read",
         datasets=[
@@ -183,7 +207,7 @@ def _books_read_by_month_graph_data(books: List[models.Book]) -> models.GraphDat
 
 
 def _books_read_compared_to_year_data(
-    read_books: List[models.Book], year: YearType, year_to_compare: YearType
+    read_books: List[models.Book], year: int, year_to_compare: int
 ) -> Dict[Tuple[str, int], int]:
     years_ints = [int(year), int(year_to_compare)]
     month_year_counts = {
@@ -193,6 +217,8 @@ def _books_read_compared_to_year_data(
     }
 
     for book in read_books:
+        if book.date_read is None:
+            continue
         month_year_counts[
             (calendar.month_abbr[book.date_read.month], book.date_read.year)
         ] += 1
@@ -201,7 +227,7 @@ def _books_read_compared_to_year_data(
 
 
 def _books_compared_to_year_graph_data(
-    read_books: List[models.Book], year: YearType, year_to_compare: YearType
+    read_books: List[models.Book], year: int, year_to_compare: int
 ) -> models.GraphData:
     data = _books_read_compared_to_year_data(read_books, year, year_to_compare)
 
@@ -211,7 +237,7 @@ def _books_compared_to_year_graph_data(
     ]
     return models.GraphData(
         type="line",
-        labels=calendar.month_abbr[1:],
+        labels=list(calendar.month_abbr[1:]),
         datasets=[
             models.Dataset(
                 label=f"Books read {year}",
@@ -264,7 +290,7 @@ def _book_rating_distribution(read_books: List[models.Book]) -> models.GraphData
 
     return models.GraphData(
         type="bar",
-        labels=list(range(1, 6)),
+        labels=[str(x) for x in range(1, 6)],
         x_axis_label="Book rating",
         y_axis_label="Number of books",
         datasets=[

@@ -88,9 +88,9 @@ class BookData(DataclassBase):
             "count": self.count,
             "total_pages": self.total_pages,
             "max_rating": self.max_rating,
-            "max_rated_book": self.max_rated_book.serialize(),
+            "max_rated_book": self.max_rated_book.serialize() if self.max_rated_book is not None else None,
             "min_rating": self.min_rating,
-            "min_rated_book": self.min_rated_book.serialize(),
+            "min_rated_book": self.min_rated_book.serialize() if self.min_rated_book is not None else None,
             "average_rating": self.average_rating,
             "average_length": self.average_length,
             "max_length": self.max_length,
@@ -104,7 +104,7 @@ class Dataset(DataclassBase):
     data: List[Any]
     background_color: str = "#068D9D"
     border_width: int = 1
-    border_color: str = None
+    border_color: Optional[str] = None
 
     def serialize(self):
         return {
@@ -121,9 +121,9 @@ class GraphData(DataclassBase):
     type: str
     labels: List[str]
     datasets: List[Dataset]
-    x_axis_label: str = None
-    y_axis_label: str = None
-    tooltip: Dict[Any, Any] = None
+    x_axis_label: Optional[str] = None
+    y_axis_label: Optional[str] = None
+    tooltip: Optional[Dict[Any, Any]] = None
 
     def serialize(self):
         return {
@@ -145,10 +145,10 @@ class GraphData(DataclassBase):
 @dataclass
 class GraphsData(DataclassBase):
     books_read: GraphData
-    books_read_compared_to_year: GraphData = None
-    book_length_distribution: GraphData = None
-    book_rating_distribution: GraphData = None
-    book_publish_year_distribution: GraphData = None
+    books_read_compared_to_year: Optional[GraphData] = None
+    book_length_distribution: Optional[GraphData] = None
+    book_rating_distribution: Optional[GraphData] = None
+    book_publish_year_distribution: Optional[GraphData] = None
 
     def serialize(self):
         return {
