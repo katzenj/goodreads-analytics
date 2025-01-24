@@ -10,7 +10,7 @@ try:
 except ModuleNotFoundError:
     import models
 
-BASE = "https://www.goodreads.com/user/show/142394620-jordan" 
+BASE = "https://www.goodreads.com/user/show/142394620-jordan"
 
 
 if os.getenv("PYTHON_ENV") == "development":
@@ -50,10 +50,11 @@ def fetch_books_data(user_id: str) -> List[models.Book]:
 
     return books
 
+
 def parse_datetime(date_string):
     if not date_string:
         return None
     try:
-        return datetime.strptime(date_string, '%Y-%m-%dT%H:%M:%S.%fZ')
+        return datetime.strptime(date_string, "%Y-%m-%dT%H:%M:%S.%fZ")
     except (ValueError, TypeError):
         return None

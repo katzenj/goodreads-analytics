@@ -2,7 +2,7 @@ from datetime import datetime
 
 from flask import Flask, render_template, request, redirect, url_for
 
-try :
+try:
     from goodreads_visualizer import orchestrator, goodreads_api, url_utils
 except ModuleNotFoundError:
     from . import orchestrator, goodreads_api, url_utils

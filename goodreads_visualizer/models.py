@@ -88,9 +88,13 @@ class BookData(DataclassBase):
             "count": self.count,
             "total_pages": self.total_pages,
             "max_rating": self.max_rating,
-            "max_rated_book": self.max_rated_book.serialize() if self.max_rated_book is not None else None,
+            "max_rated_book": self.max_rated_book.serialize()
+            if self.max_rated_book is not None
+            else None,
             "min_rating": self.min_rating,
-            "min_rated_book": self.min_rated_book.serialize() if self.min_rated_book is not None else None,
+            "min_rated_book": self.min_rated_book.serialize()
+            if self.min_rated_book is not None
+            else None,
             "average_rating": self.average_rating,
             "average_length": self.average_length,
             "max_length": self.max_length,
