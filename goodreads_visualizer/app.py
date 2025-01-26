@@ -2,10 +2,7 @@ from datetime import datetime
 
 from flask import Flask, render_template, request, redirect, url_for
 
-try:
-    from goodreads_visualizer import orchestrator, goodreads_api, url_utils
-except ModuleNotFoundError:
-    from . import orchestrator, goodreads_api, url_utils
+from goodreads_visualizer import orchestrator, goodreads_api, url_utils
 
 
 app = Flask(__name__)
@@ -41,7 +38,7 @@ def load_data_for_url():
 @app.route("/users/<user_id>", methods=["GET", "POST"])
 def reading_data(user_id):
     year = request.args.get("year") or request.form.get("year")
-    if year == "":
+    if year == "" or year is None:
         year = None
     else:
         year = int(str(year))
@@ -67,3 +64,6 @@ def reading_data(user_id):
         graphs_data=graphs_data.serialize(),
         selected_year=str(year),
     )
+
+# if __name__ == "__main__":
+#     app.run(host='0.0.0.0')

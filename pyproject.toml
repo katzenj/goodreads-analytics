@@ -8,7 +8,7 @@ packages = [{include = "goodreads_visualizer"}]
 
 [tool.poetry.dependencies]
 python = "^3.10"
-numpy = "^1.25.0"
+numpy = "^1.26.4"
 beautifulsoup4 = "^4.12.2"
 supabase = "^1.0.4"
 python-dotenv = "^1.0.0"
@@ -18,7 +18,7 @@ requests = "^2.31.0"
 pytz = "^2023.3.post1"
 feedparser = "^6.0.11"
 
-[tool.poetry.dev-dependencies]
+[tool.poetry.group.dev.dependencies]
 ipython = "^8.14.0"
 ipykernel = "^6.24.0"
 ruff = "^0.1.4"

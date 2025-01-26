@@ -5,10 +5,7 @@ from datetime import datetime
 import requests
 from dotenv import load_dotenv
 
-try:
-    from goodreads_visualizer import models
-except ModuleNotFoundError:
-    import models
+from goodreads_visualizer import models
 
 BASE = "https://www.goodreads.com/user/show/142394620-jordan"
 

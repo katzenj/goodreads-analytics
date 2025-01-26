@@ -4,22 +4,20 @@ from typing import Dict, List, Optional, Tuple, cast
 
 import numpy as np
 
-try:
-    from goodreads_visualizer import models
-except ModuleNotFoundError:
-    from . import models
+from goodreads_visualizer import models
 
 
 def get_user_books_data(
     books: List[models.Book], year: Optional[int]
 ) -> models.BookData:
     read_books = []
-    if year is not None:
-        for book in books:
-            if book.date_read is None:
-                continue
-            elif int(book.date_read.year) == int(year):
-                read_books.append(book)
+    for book in books:
+        if book.date_read is None:
+            continue
+        elif year is None:
+            read_books.append(book)
+        elif int(book.date_read.year) == int(year):
+            read_books.append(book)
 
     ratings = [book.rating for book in read_books if book.rating is not None]
     num_pages = [book.num_pages for book in read_books if book.num_pages is not None]
@@ -50,12 +48,13 @@ def graphs_data_for_year(
     all_read_books: List[models.Book], year: Optional[int] = None
 ) -> models.GraphsData:
     read_books = []
-    if year is not None:
-        for book in all_read_books:
-            if book.date_read is None:
-                continue
-            elif int(book.date_read.year) == int(year):
-                read_books.append(book)
+    for book in all_read_books:
+        if book.date_read is None:
+            continue
+        elif year is None:
+            read_books.append(book)
+        elif int(book.date_read.year) == int(year):
+            read_books.append(book)
 
     if year is not None:
         read_books_this_year = [
